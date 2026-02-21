@@ -1,6 +1,6 @@
 on:
   push:
-    branches: ["master-inactive"]
+    branches: ["master"]
     paths:
       - "apps/dndate/**"
     
@@ -27,4 +27,4 @@ jobs:
           SSH_USER: ${{ secrets.USER_NAME }}
     - name: Execute deploy command
       shell: bash
-      run: ssh deploy_server "cd ${{ secrets.DEPLOY_FOLDER }} && git pull && ~/.bun/bin/bun install && cd ${{ secrets.DEPLOY_FOLDER }}/apps/dndate && ~/.bun/bin/bun --bun run build && pm2 start pm2_config.json && pm2 save"
+      run: ssh deploy_server "cd ${{ secrets.DEPLOY_FOLDER }} && git pull && ~/.bun/bin/bun install --filter dndate && cd ${{ secrets.DEPLOY_FOLDER }}/apps/dndate && ~/.bun/bin/bun --bun run build && pm2 start pm2_config.json && pm2 save"
