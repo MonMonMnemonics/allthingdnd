@@ -1,7 +1,7 @@
 {
   "apps" : [{
     "name" : "DnDate",
-    "script": "NODE_ENV=production ~/.bun/bin/bun src/index.ts",
+    "script": "bun run start",
     "exec_interpreter": "none"
   }]
 }
