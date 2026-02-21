@@ -19,4 +19,4 @@ const server = serve({
 });
 
 console.log(`🚀 Server running at ${server.url}`);
-console.log("RUNNING ON " + (process.env.NODE_ENV !== "production") ? "PRODUCTION" : "DEVELOPMENT");
+console.log("RUNNING ON " + ((process.env.NODE_ENV !== "production") ? "DEVELOPMENT" : "PRODUCTION"));
