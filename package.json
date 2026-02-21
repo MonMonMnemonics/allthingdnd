@@ -1,0 +1,15 @@
+{
+  "name": "allthingdnd",
+  "private": true,
+  "workspaces": [
+    "apps/dndate",
+    "apps/gmscreen",
+    "apps/puzzles"
+  ],
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
