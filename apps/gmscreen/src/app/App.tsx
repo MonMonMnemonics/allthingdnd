@@ -1,9 +1,11 @@
 import { Navigate, createBrowserRouter, RouterProvider } from "react-router-dom";
 import "./index.css";
-import AttRollComparison from "./pages/AttRollComparison";
+import Homepage from "./pages/Homepage";
+import NewCharacter from "./pages/NewCharacter";
 
 const router = createBrowserRouter([
-  { path:"/", element:<AttRollComparison/>},
+  { path:"/", element:<Homepage/>},
+  { path:"/new-character", element:<NewCharacter/>},
   { path:"*", element:<Navigate to="/" replace/>},
 ]);
 

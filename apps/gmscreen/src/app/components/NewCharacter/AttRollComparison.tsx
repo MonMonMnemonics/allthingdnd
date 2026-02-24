@@ -1,6 +1,6 @@
-import pbHistData from "../../../static/pb_hist.json";
-import stdHistData from "../../../static/std_hist.json";
-import rollHistData from "../../../static/roll_hist.json";
+import pbHistData from "../../../../static/pb_hist.json";
+import stdHistData from "../../../../static/std_hist.json";
+import rollHistData from "../../../../static/roll_hist.json";
 import { Bar, BarChart, Cell, Label, XAxis, YAxis } from "recharts";
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
@@ -95,7 +95,7 @@ export default function AttRollComparison() {
                 <hr/>
                 <div className="w-full flex flex-row gap-2 flex-grow relative">
                     <div className="flex flex-col gap-2 h-full w-[45em]">
-                        <div className="font-bold text-md mb-auto mb-auto">
+                        <div className="font-bold text-xl mb-auto">
                             Starting with 6 numbers 15, 14, 13, 12, 10, and 8. Choose which number to assign to which ability score.
                         </div>
                     </div>
@@ -136,15 +136,10 @@ export default function AttRollComparison() {
                 <hr/>
                 <div className="w-full flex flex-row gap-2 flex-grow relative justify-between">
                     <div className="flex flex-col gap-3 h-full w-[45em]">
-                        <div className="font-bold text-md">
+                        <div className="font-bold text-xl">
                             Starting with 27 points, you assign a value to each ability score following table below
                         </div>
-                        <div className="mb-auto">
-                            <button className="border border-white font-bold bg-blue-700 rounded-xl px-3 py-2">
-                                Value Calculator
-                            </button>
-                        </div>
-                        <table className="table-auto">
+                        <table className="table-auto text-xl font-bold">
                             <thead>
                                 <tr>
                                     <th>Value</th>
@@ -218,14 +213,9 @@ export default function AttRollComparison() {
                 <hr/>
                 <div className="w-full flex flex-row gap-2 flex-grow relative justify-between">
                     <div className="flex flex-col gap-3 h-full w-[45em]">
-                        <div className="font-bold text-md">
-                            Roll 4d6 and drop lowest. Do this 6 times to get 6 number, then assign each number to ability score of your chosing.
+                        <div className="font-bold text-xl">
+                            Roll 4d6 and drop lowest. Do this 6 times to get 6 numbers, then assign each number to ability score of your chosing.
                         </div>
-                        <div>
-                            <button className="border border-white font-bold bg-blue-700 rounded-xl px-3 py-2">
-                                Roll with this limit
-                            </button>
-                        </div>                        
                     </div>
                     <div className="flex flex-col gap-2 text-nowrap flex-grow me-7 font-bold text-xl">
                         <div>Average Total: {Math.round(rollStat.avg*100)/100}</div>
