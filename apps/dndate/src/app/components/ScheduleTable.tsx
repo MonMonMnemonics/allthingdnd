@@ -126,7 +126,7 @@ export const ScheduleTable: FC<Props> = memo(({
             if (hostClosed.includes(dateKey)) {
                 attType += " host-unavail";
 
-                if (timeslotHostLock) {
+                if ((timeslotHostLock) && (!user.host || !isHost)) {
                     attType += " cursor-not-allowed";
                 }
             }
