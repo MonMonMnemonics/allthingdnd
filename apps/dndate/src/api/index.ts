@@ -580,7 +580,6 @@ setInterval(async () => {
         await db.delete(attendance).where(inArray(attendance.userId, users.map(e => e.id)));
         await db.delete(userInfo).where(inArray(userInfo.userId, users.map(e => e.id)));
     }
-    console.log(pollToDelete.length);
 }, 24*20*60*1000)
 
 export default API;
