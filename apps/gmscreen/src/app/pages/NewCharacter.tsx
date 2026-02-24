@@ -4,28 +4,29 @@ import { useState } from "react"
 import AttRollComparison from "../components/NewCharacter/AttRollComparison";
 
 const binderDivider = [
-    { mode: "Home", icon: faHouse, title: "Back to home"},
-    { mode: "Race", icon: faPersonHalfDress, title: "Race"},
-    { mode: "Class", icon: faHelmetSafety, title: "Class"},
-    { mode: "Ability", icon: faHandHoldingDroplet, title: "Ability Point"},
+    { mode: "Race", icon: faPersonHalfDress, title: "Race", label: "Race"},
+    { mode: "Class", icon: faHelmetSafety, title: "Class", label: "Class"},
+    { mode: "Ability", icon: faHandHoldingDroplet, title: "Ability Point", label: "Ability"},
 ]
 
 export default function NewCharacter() {
-    const [ mode, setMode ] = useState(binderDivider[0]?.mode);
+    const [ mode, setMode ] = useState("Home");
 
     return(
         <div className="w-screen h-screen relative">
-            <div className="absolute top-3 right-0 flex flex-col gap-2">
+            <div className="absolute top-3 right-0 flex flex-col gap-2 z-3">
                 <div className="bg-black border border-2 border-r-0 ps-3 pe-4 py-2 rounded-l-xl cursor-pointer" title={"Homepage"}
                     onClick={() => window.location.assign("/")}
                 >
+                    <div className="text-2xl">Home</div>
                     <FontAwesomeIcon className="text-2xl" icon={faArrowRightFromBracket}/>
                 </div>
                 {
                     binderDivider.map((dv) => 
-                        <div key={"binder-div-" + dv.mode} className="bg-black border border-2 border-r-0 ps-3 pe-4 py-2 rounded-l-xl cursor-pointer" title={dv.title}
-                            onClick={() => setMode(dv.mode)}
+                        <div key={"binder-div-" + dv.mode} title={dv.title} onClick={() => setMode(dv.mode)}
+                            className="bg-black border border-2 border-r-0 ps-3 pe-4 py-2 rounded-l-xl cursor-pointer flex flex-row gap-2 items-center" 
                         >
+                            <div className="text-2xl">{dv.label}</div>
                             <FontAwesomeIcon className="text-2xl" icon={dv.icon}/>
                         </div>
                     )
