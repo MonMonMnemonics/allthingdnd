@@ -1,15 +1,17 @@
 import { Navigate, createBrowserRouter, RouterProvider } from "react-router-dom";
 import "./index.css";
-import ApiTesterPage from "./pages/ApiTesterPage";
+import AttRollComparison from "./pages/AttRollComparison";
 
 const router = createBrowserRouter([
-  { path:"/", element:<ApiTesterPage/>},
+  { path:"/", element:<AttRollComparison/>},
   { path:"*", element:<Navigate to="/" replace/>},
 ]);
 
 export function App() {
   return (
-    <RouterProvider router={router}/>
+    <div className="w-screen h-screen">
+      <RouterProvider router={router}/>
+    </div>    
   )
 }
 

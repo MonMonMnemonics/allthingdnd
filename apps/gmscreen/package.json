@@ -9,10 +9,15 @@
     "start": "NODE_ENV=production bun src/index.ts"
   },
   "dependencies": {
+    "bun-plugin-tailwind": "^0.1.2",
+    "discord.js": "^14.25.1",
     "hono": "^4.12.2",
     "react": "^19",
     "react-dom": "^19.2.4",
-    "react-router-dom": "^7.13.1"
+    "react-router-dom": "^7.13.1",
+    "recharts": "^3.7.0",
+    "sweetalert2": "^11.26.20",
+    "tailwindcss": "^4.2.1"
   },
   "devDependencies": {
     "@types/react": "^19",
