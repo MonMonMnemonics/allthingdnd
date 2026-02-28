@@ -14,7 +14,9 @@ export default function Homepage() {
                         <div>Roll Attribute Comparison</div>
                         <FontAwesomeIcon icon={faDice}/>
                     </button>
-                    <button className="flex flex-row items-center justify-center font-bold text-xl border border-white rounded-2xl py-2 gap-3">
+                    <button className="flex flex-row items-center justify-center font-bold text-xl border border-white rounded-2xl py-2 gap-3"
+                        onClick={() => window.location.assign("/player-ref")}
+                    >
                         <div>Player Quick Ref</div>
                         <FontAwesomeIcon icon={faChessKnight}/>
                     </button>
