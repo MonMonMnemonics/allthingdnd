@@ -1,4 +1,4 @@
-import { faChessKnight, faPersonCirclePlus, faTablet } from "@fortawesome/free-solid-svg-icons";
+import { faChessKnight, faDice, faTablet } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 export default function Homepage() {
@@ -9,10 +9,10 @@ export default function Homepage() {
                     <div className="text-2xl font-bold">DnD Quick References + GM Utilities</div>
                     <hr/>
                     <button className="flex flex-row items-center justify-center font-bold text-xl border border-white rounded-2xl py-2 gap-3"
-                        onClick={() => window.location.assign("/new-character")}
+                        onClick={() => window.location.assign("/att-roll-comparison")}
                     >
-                        <div>Creating A New Character</div>
-                        <FontAwesomeIcon icon={faPersonCirclePlus}/>
+                        <div>Roll Attribute Comparison</div>
+                        <FontAwesomeIcon icon={faDice}/>
                     </button>
                     <button className="flex flex-row items-center justify-center font-bold text-xl border border-white rounded-2xl py-2 gap-3">
                         <div>Player Quick Ref</div>

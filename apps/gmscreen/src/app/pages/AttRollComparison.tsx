@@ -1,9 +1,11 @@
-import pbHistData from "../../../../static/pb_hist.json";
-import stdHistData from "../../../../static/std_hist.json";
-import rollHistData from "../../../../static/roll_hist.json";
+import pbHistData from "../../../static/pb_hist.json";
+import stdHistData from "../../../static/std_hist.json";
+import rollHistData from "../../../static/roll_hist.json";
 import { Bar, BarChart, Cell, Label, XAxis, YAxis } from "recharts";
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faArrowRightFromBracket } from "@fortawesome/free-solid-svg-icons";
 
 interface Stat {
     avg: number,
@@ -90,6 +92,15 @@ export default function AttRollComparison() {
 
     return(
         <div className="w-screen h-screen flex flex-col p-5 gap-3">
+            <div className="absolute top-3 right-0 flex flex-col gap-2 z-3">
+                <div className="bg-black border border-2 border-r-0 ps-3 pe-4 py-2 rounded-l-xl cursor-pointer flex flex-row items-center gap-1 font-bold" title={"Homepage"}
+                    onClick={() => window.location.assign("/")}
+                >
+                    <div className="text-xl">Home</div>
+                    <FontAwesomeIcon className="text-xl" icon={faArrowRightFromBracket}/>
+                </div>
+            </div>
+
             <div className="h-full border rounded-2xl border-2 flex flex-col p-3 gap-2">
                 <div className="w-full text-center text-2xl font-bold">Standard Array</div>
                 <hr/>
