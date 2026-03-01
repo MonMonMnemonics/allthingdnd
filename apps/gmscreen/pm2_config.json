@@ -1,0 +1,7 @@
+{
+  "apps" : [{
+    "name" : "GMTool",
+    "script": "bun run start",
+    "exec_interpreter": "none"
+  }]
+}
