@@ -1,7 +1,4 @@
-export type Item = {
-    name: string,
-    desc: string
-}
+import type { Item } from "./general"
 
 export const action: Item[] = [
     { name: "Attack/Cast magic", desc: ""},
@@ -9,7 +6,7 @@ export const action: Item[] = [
     { name: "Disengage", desc: "Negate attack of opportunity"},
     { name: "Dodge", desc: "Attacked with disadv until next turn"},
     { name: "Help", desc: "5 feet range, add adv to other's action"},
-    { name: "Ready", desc: "Declare trigger for reaction, ready spell (onlu up to 1 action casting time) counted as concentration"},
+    { name: "Ready", desc: "Declare trigger for reaction, ready spell (only up to 1 action casting time) counted as concentration"},
     { name: "Grapple", desc: "1 size larger max, str or dex contest, drag uses 1 extra move speed"},
     { name: "Shove", desc: "1 size larger max, str or dex contest, push 5 feet away and proned"},
     { name: "Stabilize", desc: "DC 10 medicine, stabilize unconscious"},
@@ -42,7 +39,17 @@ export const notes: string[] = [
     "Knocking out: only melee, if hit to 0 hp",
     "Falling from mount: DC 10 dex, prone 5 feet away if fail",
     "Underwater: attack with disadv if 0 speed left, range can only hit in normal range with disadv, fire resist",
-    "Concentration: Break if cast other concentration or incapacitated. If attacked, roll DC 10 or half damage (bigger one) constituation check",
+    "Concentration: Break if cast other concentration or incapacitated. If attacked, roll DC 10 or half damage (bigger one) constitution check",
     "Ritual casting: Need special skill, 10 min casting time, doesn't spend spell slot, cannot upcast",
-    "Spell attack roll: Counted as range attack (disadv at 5 feet), D20 + proficiency + casting attribute modifier"
+    "Spell attack roll: Counted as range attack (disadv at 5 feet), D20 + proficiency + casting attribute modifier",
+    "Half-cover: AC + 2, 3/4-cover: AC + 5, full-cover: can't be targeted"
+]
+
+export const sizes: string[] = [
+    "Tiny: 2.5 by 2.5 feet",
+    "Small: 5 by 5 feet",
+    "Medium: 5 by 5 feet",
+    "Large: 10 by 10 feet",
+    "Huge: 15 by 15 feet",
+    "Gargantuan: 20 by 20 feet or larger",
 ]

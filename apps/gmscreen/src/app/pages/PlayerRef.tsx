@@ -1,4 +1,5 @@
-import { action, bonusAction, notes, reaction, type Item } from "@/common/dnd5e/combats";
+import { action, bonusAction, notes, reaction } from "@/common/dnd5e/combats";
+import type { Item } from "@/common/dnd5e/general";
 import { conditions } from "@/common/dnd5e/conditions";
 import { faArrowRightFromBracket } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -8,7 +9,7 @@ function ItemComponent({item, idx}: {item: Item, idx: number}) {
     const [ showTooltip, setShowTooltip ] = useState(false);
 
     return(
-        <div className="relative text-center py-2 px-3 border rounded-2xl text-xl flex flex-col cursor-pointer"
+        <div className="group relative text-center py-2 px-3 border rounded-2xl text-xl flex flex-col cursor-pointer"
             onMouseEnter={() => setShowTooltip(true)} onMouseLeave={() => setShowTooltip(false)}
         >
             <div className="my-auto text-center">
@@ -16,7 +17,7 @@ function ItemComponent({item, idx}: {item: Item, idx: number}) {
             </div>
             {
                 (item.desc != "") ?
-                <div className={"absolute bg-green-600 left-1/2 top-10 ml-auto mr-auto min-w-max -translate-x-1/2 rounded-lg px-2 py-1 font-bold transition-all duration-500 z-1 " + (showTooltip ? "" : "hidden")}>
+                <div className="absolute bg-green-600 left-1/2 top-10 ml-auto mr-auto min-w-max scale-0 -translate-x-1/2 rounded-lg px-2 py-1 font-bold transition-all duration-500 z-1 group-has-hover:scale-100">
                     <div className="flex max-w-xs flex-col items-center">
                         <div className="rounded-xl p-2 text-center text-sm text-white">
                             {item.desc}
