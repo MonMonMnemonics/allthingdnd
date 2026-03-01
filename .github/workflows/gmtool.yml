@@ -27,4 +27,4 @@ jobs:
           SSH_USER: ${{ secrets.USER_NAME }}
     - name: Execute deploy command
       shell: bash
-      run: ssh deploy_server "cd ${{ secrets.DEPLOY_FOLDER }} && git pull && ~/.bun/bin/bun install --filter gmscreen && cd ${{ secrets.DEPLOY_FOLDER }}/apps/gmscreen && ~/.bun/bin/bun --bun run build && pm2 restart GMTool"
+      run: ssh deploy_server "cd ${{ secrets.DEPLOY_FOLDER }} && git pull && ~/.bun/bin/bun install && cd ${{ secrets.DEPLOY_FOLDER }}/apps/gmscreen && ~/.bun/bin/bun --bun run build && pm2 restart GMTool"
