@@ -60,3 +60,37 @@ export const misc: { title:string, items: string[]}[] = [
         ]
     }
 ]
+
+export const commonItems: Item[] = [
+    { name: "Ale", desc: "4 cp/mug, 2 sp/gal" },
+    { name: "Bread", desc: "2 cp/loaf"},
+    { name: "Cheese", desc: "1 sp/chunk"},
+    { name: "Meat", desc: "3 sp/chunk"},
+    { name: "Wine", desc: "2 sp/pitcher, 10 gp/bottle"},
+    { name: "Banquet", desc: "10 gp/person"},
+    { name: "Meal", desc: "3 cp - 2 gp per day"},
+    { name: "Inn stay", desc: "7 cp - 4 gp per day"},
+    { name: "Healing Potion", desc: "50 gp, 2d4 + 2"},
+    { name: "Greater Healing Potion", desc: "200-250 gp, 4d4 + 4"},
+    { name: "Superiori Healing Potion", desc: "2,000-2,500 gp, 8d4 + 8"},
+    { name: "Supreme Healing Potion", desc: "20,000-25,000 gp, 10d4 + 20"},
+    { name: "Uncommon", desc: "200 - 600 gp, ex: +1 items"},
+    { name: "Rare", desc: "2,000 - 4,000 gp, ex: +2 items"},
+    { name: "Very Rare", desc: "20,000 - 40,000 gp, ex: +3 items"},
+    { name: "Scrolls", desc: "10 - 20 gp for cantrip, 2-5x per 1 level up"},
+    { name: "Arrows", desc: "7 sp - 2 gp/20 arrows"},
+    { name: "Bolts", desc: "7 sp - 2 gp/20 bolts"},
+    { name: "Bowstring", desc: "1-3 gp/5 strings"},
+    { name: "Javelin", desc: "3-8 gp"},
+    { name: "Spear", desc: "7 sp - 2 gp"},
+    { name: "Dagger", desc: "1 - 3 gp"},
+    { name: "Longsword", desc: "11 - 22 gp"},
+    { name: "Shortsword", desc: "7 - 15 gp"},
+    { name: "Lance", desc: "7 - 15 gp"},
+    { name: "Shield", desc: "7 - 15 gp"},
+    { name: "Lamp", desc: "3 - 8 sp"},
+    { name: "Lantern", desc: "3 - 15 gp"},
+    { name: "Lock", desc: "7 - 15 gp"},
+    { name: "Hunting Trap", desc: "3 - 8 gp"},
+    { name: "Grappling Hook", desc: "1 - 3 gp"},
+]

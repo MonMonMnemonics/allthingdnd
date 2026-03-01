@@ -2,7 +2,7 @@ import { Fragment, useState } from "react"
 import { Notebook, Swords, UserSearch } from "lucide-react"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowRightFromBracket, faBookmark, faBoxesStacked } from "@fortawesome/free-solid-svg-icons";
-import { abilityChecks, misc } from "@/common/dnd5e/general";
+import { abilityChecks, commonItems, misc } from "@/common/dnd5e/general";
 import { action, bonusAction, notes, reaction, sizes } from "@/common/dnd5e/combats";
 import { conditions } from "@/common/dnd5e/conditions";
 import { advancement, multiclassingReq, spellAtt, spellSlots } from "@/common/dnd5e/chars";
@@ -10,7 +10,6 @@ import { advancement, multiclassingReq, spellAtt, spellSlots } from "@/common/dn
 const modes = [
     {mode: "GENERAL", icon: <Notebook strokeWidth={3} size={"1.2em"}/>},
     {mode: "COMBAT", icon: <Swords strokeWidth={3} size={"1.2em"}/>},
-    {mode: "ITEMS", icon: <FontAwesomeIcon icon={faBoxesStacked}/>},
     {mode: "CHAR", icon: <UserSearch strokeWidth={3} size={"1.2em"}/>},
 ]
 
@@ -56,7 +55,7 @@ export default function GmRef() {
                 {
                     (mode == "GENERAL") ?
                         <div className="grow w-full flex flex-row gap-3 font-bold">
-                            <div className="w-[30%] h-full border rounded-2xl flex flex-col gap-1 p-2">
+                            <div className="w-[30em] h-full border rounded-2xl flex flex-col gap-1 p-2">
                                 <div className="text-xl text-center">Ability Checks</div>
                                 <hr/>
                                 <div className="grow relative">
@@ -69,7 +68,7 @@ export default function GmRef() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="grow h-full p-2 grid grid-flow-col grid-rows-2 gap-3">
+                            <div className="grow h-full p-2 grid grid-flow-col grid-rows-3 gap-3">
                                 {
                                     misc.map((item, idx) =>
                                         <div key={"general-" + item.title} className="border rounded-2xl flex flex-col gap-1 p-2">
@@ -87,6 +86,33 @@ export default function GmRef() {
                                         </div>
                                     )
                                 }
+                                <div className="border rounded-2xl flex flex-col gap-1 p-2 row-span-2">
+                                    <div className="text-xl text-center">Common Items</div>
+                                    <div className="text-center">10 cp = 1 sp, 5 sp = 1 ep, 2 ep = 1 gp, 10 gp = 1 pp</div>
+                                    <hr/>
+                                    <div className='relative grow select-none flex flex-col'>
+                                        <div className="max-h-full w-full flex flex-col absolute overflow-y-auto ms-2 pe-2 pb-2">
+                                            <table className='table-auto p-2' style={{ width: 'auto' }}>
+                                                <thead className="sticky top-0">
+                                                    <tr>
+                                                        <th className="bg-[#1a1a1a]">Item</th>
+                                                        <th className="bg-[#1a1a1a]">Price Range</th>
+                                                    </tr>                                                    
+                                                </thead>
+                                                <tbody>
+                                                    {
+                                                        commonItems.map((item, idx) => 
+                                                            <tr key={"item-price-" + idx}>
+                                                                <td>{item.name}</td>
+                                                                <td>{item.desc}</td>
+                                                            </tr>
+                                                        )
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     : (mode == "COMBAT") ? 
