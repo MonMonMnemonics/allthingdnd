@@ -1,21 +1,20 @@
 <script lang="ts">
+	import LoadingScreen from "$lib/components/LoadingScreen.svelte";
+	import { generateCSS } from "$lib/helpers/colFilterGenerator";
 	import type { Marker } from "$lib/helpers/rune-wheel";
-	import { onMount } from "svelte";
+	import { onDestroy, onMount } from "svelte";
     const wheelN = 9;
     const playerIdx = [
         "D61A3C",
         "48864D",
         "4A57BA"
     ]
-    const filterArr = [
-        "brightness(0) saturate(100%) invert(14%) sepia(57%) saturate(4796%) hue-rotate(337deg) brightness(114%) contrast(97%)",
-        "brightness(0) saturate(100%) invert(39%) sepia(46%) saturate(438%) hue-rotate(75deg) brightness(105%) contrast(91%)",
-        "brightness(0) saturate(100%) invert(30%) sepia(93%) saturate(724%) hue-rotate(204deg) brightness(93%) contrast(91%)"
-    ]
 
     let terminalIdx = $state(0);
     let innerIdxShift = $state(0);
     let outerIdxShift = $state(0);
+    let colFilterCss: string[] = $state([]);
+    let loading = $state(true);
 
     let outerCanvas: HTMLCanvasElement;
     let innerCanvas: HTMLCanvasElement;
@@ -27,7 +26,33 @@
         markers: []
     });
 
+    let esListener: EventSource | undefined;
+
     onMount(() => {
+        //-------------- START EVENT SOURCE --------------
+        esListener = new EventSource("/rune-wheel/listener");
+
+        esListener.onmessage = (event) => {
+            console.log(event);
+        };
+
+        esListener.onerror = (err) => {
+            console.error('EventSource failed:', err);
+            if (esListener) {
+                esListener.close();
+            }            
+        };
+
+        return () => {
+            if (esListener) {
+                esListener.close();
+            }            
+        };
+    })
+
+    async function initiatePuzzle() {
+colFilterCss = playerIdx.map(hexClr => generateCSS(hexClr));
+
         let numberBin = [...Array(77).keys()].map(e => e + 1);
         
         let innerVal: number[] = [];
@@ -77,10 +102,7 @@
             pad: pad
         }
 
-        loadCanvasImages(innerVal, outerVal);
-    })
-
-    async function loadCanvasImages(innerVal: number[], outerVal: number[]) {
+        //-------------- DRAW TO CANVAS --------------
         const imgIdxs = [...new Set([...innerVal, ...outerVal])];
         let imgElements: HTMLImageElement[] = []
         
@@ -235,9 +257,14 @@
                 outerCtx.stroke()
             }
         }
+
+        loading = false;
     }
 </script>
 
+{#if loading}
+<LoadingScreen/>
+{/if}
 <div class="w-screen h-screen home overflow-x-hidden overflow-y-auto relative">
     <div class="absolute w-screen h-screen p-5 overflow-x-hidden overflow-y-hidden flex flex-row gap-2 p-7">
         <div class="grow flex flex-col relative">
@@ -247,7 +274,7 @@
                         <div class="border border-1 aspect-square flex flex-col relative">
                             <div class="my-auto flex flex-row w-full">
                                 <img src={"/src/lib/assets/icons/" + (dt.icoIdx) + ".png"} class="mx-auto aspect-square w-[80%] inverted" draggable="false" alt=""
-                                    style:filter={filterArr[dt.owner]}
+                                    style:filter={colFilterCss[dt.owner]}
                                 />
                             </div>
                         </div>

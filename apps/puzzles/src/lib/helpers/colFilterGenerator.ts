@@ -1,29 +1,4 @@
-const colorRadio = document.getElementById("color-radio");
-const colorInput = document.getElementById("color-input");
-
-colorRadio.addEventListener("change", () => {
-  colorInput.value = colorRadio.value;
-  validateColor(colorInput.value);
-});
-
-colorInput.addEventListener("input", () => {
-  validateColor(colorInput.value);
-
-  switch (colorInput.value.length) {
-    case 4:
-      colorRadio.value = "#" + hexexpand(colorInput.value);
-      break;
-    case 7:
-      colorRadio.value = colorInput.value;
-      break;
-    default:
-      colorRadio.value = "#000000";
-      break;
-  }
-});
-
-// Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
-function expandHex(hextexp) {
+function expandHex(hextexp: string) {
   const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
   hextexp = hextexp.replace(shorthandRegex, (m, r, g, b) => {
     return r + r + g + g + b + b;
@@ -31,8 +6,8 @@ function expandHex(hextexp) {
   return hextexp;
 }
 
-function rgbToHex(r, g, b) {
-  function componentToHex(c) {
+function rgbToHex(r: number, g: number, b: number) {
+  function componentToHex(c: number) {
     var hex = c.toString(16);
     return hex.length == 1 ? "0" + hex : hex;
   }
@@ -40,7 +15,7 @@ function rgbToHex(r, g, b) {
   return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
 }
 
-function hexToRgb(hex) {
+function hexToRgb(hex: string): number[] {
   const expandedHex = expandHex(hex);
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(expandedHex);
   return result
@@ -49,19 +24,23 @@ function hexToRgb(hex) {
         parseInt(result[2], 16),
         parseInt(result[3], 16),
       ]
-    : null;
+    : [0, 0, 0];
 }
 
-function trimRgb(rgb) {
+function trimRgb(rgb: string) {
   const [r, g, b] = rgb
     .replace(/rgb\(|\) /i, "")
     .split(",")
-    .map((x) => parseInt(x));
+    .map((x: string) => parseInt(x));
   return [r, g, b];
 }
 
 class Color {
-  constructor(r, g, b) {
+  public r: number = 0;
+  public g: number = 0;
+  public b: number = 0;
+
+  constructor(r: number, g: number, b: number) {
     this.set(r, g, b);
   }
 
@@ -75,7 +54,7 @@ class Color {
     return rgbToHex(Math.round(this.r), Math.round(this.g), Math.round(this.b));
   }
 
-  set(r, g, b) {
+  set(r: number, g: number, b: number) {
     this.r = this.clamp(r);
     this.g = this.clamp(g);
     this.b = this.clamp(b);
@@ -141,7 +120,7 @@ class Color {
     ]);
   }
 
-  multiply(matrix) {
+  multiply(matrix: number[]) {
     const newR = this.clamp(
       this.r * matrix[0] + this.g * matrix[1] + this.b * matrix[2]
     );
@@ -182,9 +161,9 @@ class Color {
     const b = this.b / 255;
     const max = Math.max(r, g, b);
     const min = Math.min(r, g, b);
-    let h,
-      s,
-      l = (max + min) / 2;
+    let h: number = 0;
+    let s: number = 0;
+    let l = (max + min) / 2;
 
     if (max === min) {
       h = s = 0;
@@ -214,7 +193,7 @@ class Color {
     };
   }
 
-  clamp(value) {
+  clamp(value: number) {
     if (value > 255) {
       value = 255;
     } else if (value < 0) {
@@ -224,8 +203,17 @@ class Color {
   }
 }
 
+interface Result {
+  values: number[],
+  loss: number
+}
+
 class Solver {
-  constructor(target, baseColor) {
+  private reusedColor: Color;
+  private target: Color;
+  private targetHSL: {h: number, s: number, l: number};
+
+  constructor(target: Color) {
     this.target = target;
     this.targetHSL = target.hsl();
     this.reusedColor = new Color(0, 0, 0);
@@ -233,12 +221,7 @@ class Solver {
 
   solve() {
     const result = this.solveNarrow(this.solveWide());
-    return {
-      values: result.values,
-      loss: result.loss,
-      filter: this.css(result.values),
-      filterRaw: this.raw(result.values),
-    };
+    return this.raw(result.values);
   }
 
   solveWide() {
@@ -246,10 +229,10 @@ class Solver {
     const c = 15;
     const a = [60, 180, 18000, 600, 1.2, 1.2];
 
-    let best = { loss: Infinity };
-    for (let i = 0; best.loss > 25 && i < 3; i++) {
+    let best: Result = { values: [], loss: Infinity };
+    for (let i = 0; best.loss > 1 && i < 10; i++) {
       const initial = [50, 20, 3750, 50, 100, 100];
-      const result = this.spsa(A, a, c, initial, 1000);
+      const result = this.spsa(A, a, c, initial, 20000);
       if (result.loss < best.loss) {
         best = result;
       }
@@ -257,7 +240,7 @@ class Solver {
     return best;
   }
 
-  solveNarrow(wide) {
+  solveNarrow(wide: Result) {
     const A = wide.loss;
     const c = 2;
     const A1 = A + 1;
@@ -265,15 +248,15 @@ class Solver {
     return this.spsa(A, a, c, wide.values, 500);
   }
 
-  spsa(A, a, c, values, iters) {
+  spsa(A: number, a: number[], c: number, values: number[], iters: number): Result {
     const alpha = 1;
     const gamma = 0.16666666666666666;
 
-    let best = null;
-    let bestLoss = Infinity;
-    const deltas = new Array(6);
-    const highArgs = new Array(6);
-    const lowArgs = new Array(6);
+    let best: number[] = [];
+    let bestLoss: number = Infinity;
+    const deltas: number[] = new Array(6);
+    const highArgs: number[] = new Array(6);
+    const lowArgs: number[] = new Array(6);
 
     for (let k = 0; k < iters; k++) {
       const ck = c / Math.pow(k + 1, gamma);
@@ -298,7 +281,7 @@ class Solver {
     }
     return { values: best, loss: bestLoss };
 
-    function fix(value, idx) {
+    function fix(value: number, idx: number) {
       let max = 100;
       if (idx === 2 /* saturate */) {
         max = 7500;
@@ -321,7 +304,7 @@ class Solver {
     }
   }
 
-  loss(filters) {
+  loss(filters: number[]) {
     // Argument is array of percentages.
     const color = this.reusedColor;
     color.set(0, 0, 0);
@@ -344,8 +327,8 @@ class Solver {
     );
   }
 
-  raw(filters) {
-    function fmt(idx, multiplier = 1) {
+  raw(filters: number[]) {
+    function fmt(idx: number, multiplier = 1) {
       return Math.round(filters[idx] * multiplier);
     }
     return `brightness(0) saturate(100%) invert(${fmt(0)}%) sepia(${fmt(
@@ -354,163 +337,17 @@ class Solver {
       4
     )}%) contrast(${fmt(5)}%)`;
   }
-
-  css(filters) {
-    function fmt(idx, multiplier = 1) {
-      return Math.round(filters[idx] * multiplier);
-    }
-    return `filter: brightness(0) saturate(100%) invert(${fmt(0)}%) sepia(${fmt(
-      1
-    )}%) saturate(${fmt(2)}%) hue-rotate(${fmt(3, 3.6)}deg) brightness(${fmt(
-      4
-    )}%) contrast(${fmt(5)}%);`;
-  }
 }
 
-function compute() {
-  const input = document.getElementById("color-input").value;
-  let rgb;
-
-  if (isHEXValid(input)) {
-    rgb = hexToRgb(input);
-  } else if (isRGBValid(input)) {
-    rgb = trimRgb(input);
-  } else {
-    alert("Invalid format!");
-    return;
+export function generateCSS(input: string) {
+  if (input[0] != "#") {
+    input = "#" + input;
   }
-
-  if (rgb.length !== 3) {
-    alert("Invalid format!");
-    return;
-  }
+  let rgb: number[];
+  rgb = hexToRgb(input);
 
   const color = new Color(rgb[0], rgb[1], rgb[2]);
   const solver = new Solver(color);
   const result = solver.solve();
-  let lossMsg = "";
-  const res = {
-    color,
-    solver,
-    result,
-    lossMsg,
-  };
-
-  if (res.result.loss < 1) {
-    res.lossMsg = "This is a perfect result.";
-  } else if (res.result.loss < 5) {
-    res.lossMsg = "This is close enough.";
-  } else if (res.result.loss < 15) {
-    res.lossMsg = "The color is somewhat off. Consider running it again.";
-  } else {
-    res.lossMsg = "The color is extremely off. Run it again!";
-  }
-
-  const filterPixel = document.getElementById("filterPixel");
-  const filterPixelText = document.getElementById("filterPixelText");
-  const lossDetail = document.getElementById("lossDetail");
-  const realPixel = document.getElementById("realPixel");
-  const realPixelTextRGB = document.getElementById("realPixelTextRGB");
-  const realPixelTextHEX = document.getElementById("realPixelTextHEX");
-  const rgbColor = res.color.toRgb();
-  const hexColor = res.color.toHex();
-
-  realPixel.style.backgroundColor = rgbColor;
-  realPixelTextRGB.innerText = rgbColor;
-  realPixelTextRGB.parentElement.setAttribute("data-clipboard-text", rgbColor);
-  realPixelTextHEX.innerText = hexColor;
-  realPixelTextHEX.parentElement.setAttribute("data-clipboard-text", hexColor);
-
-  filterPixel.style.filter = String(res.result.filterRaw);
-  filterPixel.style.webkitFilter = String(res.result.filterRaw);
-
-  filterPixelText.innerText = res.result.filter;
-  filterPixelText.parentElement.setAttribute(
-    "data-clipboard-text",
-    res.result.filter
-  );
-
-  lossDetail.innerHTML = `Loss: ${res.result.loss.toFixed(1)}. <b>${
-    res.lossMsg
-  }</b>`;
+  return result;
 }
-
-function isHEXValid(color) {
-  const HEXColorRegExp = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
-  const isValid = HEXColorRegExp.test(color);
-
-  if (isValid) {
-    return true;
-  } else {
-    return false;
-  }
-}
-
-function isRGBValid(color) {
-  const RGBColorRegExp = /^(rgb\()?\d{1,3}, ?\d{1,3}, ?\d{1,3}(\))?$/i;
-
-  if (!RGBColorRegExp.test(color)) return false;
-
-  color = color.toLowerCase();
-  const startCheck = color.startsWith("rgb");
-  const endCheck = color.endsWith(")");
-  if ((startCheck && !endCheck) || (!startCheck && endCheck)) return false;
-
-  const [r, g, b] = color
-    .replace(/^rgb\(|\)| /, "")
-    .split(",")
-    .map((x) => parseInt(x));
-  console.log(r, g, b);
-  if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255) {
-    return true;
-  } else {
-    return false;
-  }
-}
-
-function validateColor(color) {
-  const submitButton = document.getElementById("action-button");
-
-  if (isHEXValid(color) || isRGBValid(color)) {
-    submitButton.classList.remove("disabled");
-  } else if (!submitButton.classList.contains("disabled")) {
-    submitButton.classList.add("disabled");
-  }
-}
-
-function onStart() {
-  const initialColor = new URLSearchParams(document.location.search).get(
-    "color"
-  );
-  if (initialColor && isHEXValid(`#${initialColor}`)) {
-    document
-      .getElementById("color-input")
-      .setAttribute("value", `#${initialColor}`);
-    document
-      .getElementById("color-radio")
-      .setAttribute("value", `#${initialColor}`);
-    validateColor(`#${initialColor}`);
-    compute();
-  }
-
-  const copyableElements = document.querySelectorAll(".copyable");
-  const copyEl = document.querySelectorAll(".pos");
-
-  new ClipboardJS("span.copyable");
-
-  copyableElements.forEach((el, index) => {
-    el.addEventListener("click", () => {
-      copyEl[index].classList.add("copied");
-
-      setTimeout(() => {
-        copyEl[index].classList.remove("copied");
-      }, 1500);
-    });
-  });
-
-  document.addEventListener("DOMContentLoaded", function () {
-    document.getElementById("color-input").removeAttribute("disabled");
-  });
-}
-
-onStart();

@@ -19,3 +19,7 @@ img.inverted {
 .font-kalam {
   font-family: "Kalam", cursive;
 }
+
+.bg-default {
+  background-color: #1a1a1a;
+}
