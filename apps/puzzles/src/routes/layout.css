@@ -11,3 +11,11 @@
 img.inverted {
     filter: invert(100%);
 }
+
+.font-jacquard {
+  font-family: "Jacquard 24", system-ui;
+}
+
+.font-kalam {
+  font-family: "Kalam", cursive;
+}

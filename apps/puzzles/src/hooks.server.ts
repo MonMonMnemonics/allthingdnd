@@ -1,6 +1,9 @@
 export async function handle({ event, resolve }) {
-  const response = await resolve(event);
-
+  const response = await resolve(event, {
+    preload: ({ type }) => {
+      return (type === 'font') || (type === 'js') || (type === 'css');
+    }
+  });
 
   response.headers.set('Access-Control-Allow-Origin', (import.meta.env.MODE == "production") ? "*.3mworkshop.org" : '*'); 
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
