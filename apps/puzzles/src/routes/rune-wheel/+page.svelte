@@ -33,7 +33,17 @@
         esListener = new EventSource("/rune-wheel/listener");
 
         esListener.onmessage = (event) => {
-            console.log(event);
+            const data = JSON.parse(event.data);
+
+            if (data.hasOwnProperty("flag")) {
+                switch (data.flag) {
+                    case "USER-INPUT": {
+                        innerIdxShift = data.data.innerShift;
+                        outerIdxShift = data.data.outerShift;
+                        break;
+                    }                
+                }
+            }
         };
 
         esListener.onerror = (err) => {
@@ -43,6 +53,8 @@
             }            
         };
 
+        initiatePuzzle();
+
         return () => {
             if (esListener) {
                 esListener.close();
@@ -51,7 +63,7 @@
     })
 
     async function initiatePuzzle() {
-colFilterCss = playerIdx.map(hexClr => generateCSS(hexClr));
+        colFilterCss = playerIdx.map(hexClr => generateCSS(hexClr));
 
         let numberBin = [...Array(77).keys()].map(e => e + 1);
         
@@ -260,6 +272,29 @@ colFilterCss = playerIdx.map(hexClr => generateCSS(hexClr));
 
         loading = false;
     }
+
+async function padClick(icoIdx: number) {
+    let innerShift = Math.floor(Math.random()*2*wheelN);
+    while (innerShift == innerIdxShift) {
+        innerShift = Math.floor(Math.random()*2*wheelN);
+    }
+
+    let outerShift = Math.floor(Math.random()*2*wheelN);
+    while (outerShift == outerIdxShift) {
+        outerShift = Math.floor(Math.random()*2*wheelN);
+    }
+    
+    await fetch("/rune-wheel/listener", {
+        method: "POST",
+        body: JSON.stringify({
+            innerShift,
+            outerShift
+        }),
+        headers: {
+            "Content-Type": "application/json"
+        }
+    })
+}
 </script>
 
 {#if loading}
@@ -283,19 +318,7 @@ colFilterCss = playerIdx.map(hexClr => generateCSS(hexClr));
                 <div class="mx-auto grid grid-flow-col grid-rows-5">
                     {#each data.pad as icoIdx}
                         <button class="border border-1 aspect-square w-[100%] flex flex-col relative cursor-pointer"
-                            onclick={() => {
-                                let newIdx = Math.floor(Math.random()*2*wheelN);
-                                while (newIdx == innerIdxShift) {
-                                    newIdx = Math.floor(Math.random()*2*wheelN);
-                                }
-                                innerIdxShift = newIdx;
-
-                                newIdx = Math.floor(Math.random()*2*wheelN);
-                                while (newIdx == outerIdxShift) {
-                                    newIdx = Math.floor(Math.random()*2*wheelN);
-                                }
-                                outerIdxShift = newIdx;
-                            }}
+                            onclick={() => padClick(icoIdx)}
                         >
                             <div class="my-auto flex flex-row w-full">
                                 <img src={"/src/lib/assets/icons/" + (icoIdx) + ".png"} class="mx-auto aspect-square w-[80%] inverted" draggable="false" alt=""/>

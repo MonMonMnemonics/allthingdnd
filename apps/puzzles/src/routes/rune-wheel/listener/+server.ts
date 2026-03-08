@@ -1,22 +1,21 @@
-export function GET() {
-  const headers = {
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive',
-  };
+import { addPubSubListener, broadcastDt, pubSubHeader } from "$lib/server/pubsub";
+import { text } from '@sveltejs/kit';
 
-  const body = new ReadableStream({
-    start(controller) {
-      const intervalId = setInterval(() => {
-        const data = `data: The current time is ${new Date().toLocaleTimeString()}\n\n`;
-        controller.enqueue(data);
-      }, 1000);
+export function GET(req) {
+    const body = addPubSubListener("rune-wheel", req.getClientAddress());
 
-      return () => {
-        clearInterval(intervalId);
-      };
-    },
-  });
+    return new Response(body, { headers: pubSubHeader });
+}
 
-  return new Response(body, { headers });
+export async function POST(req) {
+    const body = await req.request.json();
+    broadcastDt("rune-wheel", {
+        flag: 'USER-INPUT',
+        data: {
+            innerShift: body.innerShift ?? 0,
+            outerShift: body.outerShift ?? 0,
+        }
+    });
+
+    return text("OK", { status: 200 });
 }
