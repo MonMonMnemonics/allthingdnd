@@ -2,7 +2,8 @@ import { addPubSubListener, broadcastDt, pubSubHeader } from "$lib/server/pubsub
 import { text } from '@sveltejs/kit';
 
 export function GET(req) {
-    const body = addPubSubListener("rune-wheel", req.getClientAddress());
+    const ipAddr = req.getClientAddress();
+    const body = addPubSubListener("rune-wheel", ipAddr);
 
     return new Response(body, { headers: pubSubHeader });
 }
