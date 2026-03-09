@@ -1,22 +1,47 @@
+import { decrypt } from "$lib/helpers/encrypter.js";
+import { decodeToken } from "$lib/helpers/tokenization.js";
 import { addPubSubListener, broadcastDt, pubSubHeader } from "$lib/server/pubsub";
 import { text } from '@sveltejs/kit';
 
-export function GET(req) {
+export async function GET(req) {
     const ipAddr = req.getClientAddress();
-    const body = addPubSubListener("rune-wheel", ipAddr);
 
-    return new Response(body, { headers: pubSubHeader });
+    try {
+        const encodedToken = await decrypt(req.params.token);
+        const token = decodeToken(encodedToken);
+
+        if (token) {
+            const body = addPubSubListener(token.type + "-" + token.nPlayer.toString() + "-" + token.seed.toString(), ipAddr);
+            return new Response(body, { headers: pubSubHeader });
+        }      
+
+        return text("INVALID TOKEN", { status: 400 })
+    } catch (err) {
+        return text("INVALID TOKEN", { status: 400 })
+    }
 }
 
 export async function POST(req) {
     const body = await req.request.json();
-    broadcastDt("rune-wheel", {
-        flag: 'USER-INPUT',
-        data: {
-            innerShift: body.innerShift ?? 0,
-            outerShift: body.outerShift ?? 0,
-        }
-    });
 
-    return text("OK", { status: 200 });
+    try {
+        const encodedToken = await decrypt(req.params.token);
+        const token = decodeToken(encodedToken);
+
+        if (token) {
+            broadcastDt(token.type + "-" + token.nPlayer.toString() + "-" + token.seed.toString(), {
+                flag: 'USER-INPUT',
+                data: {
+                    innerShift: body.innerShift ?? 0,
+                    outerShift: body.outerShift ?? 0,
+                }
+            });
+
+            return text("OK", { status: 200 });
+        }      
+
+        return text("INVALID TOKEN", { status: 400 })
+    } catch (err) {
+        return text("INVALID TOKEN", { status: 400 })
+    }
 }

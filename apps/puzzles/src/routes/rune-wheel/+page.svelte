@@ -53,14 +53,14 @@
             >Generate Puzzle</button>
             
             {#if gmToken != ""} 
-                <div>GM Link: <a href={"/rune-wheel/" + gmToken} class="cursor-pointer underline text-blue-500 hover:text-blue-700" >{window.location.hostname + "/rune-wheel/" + gmToken}</a></div>
+                <a href={"/rune-wheel/" + gmToken} class="cursor-pointer underline text-blue-500 hover:text-blue-700" >GM Link</a>
             {/if}
 
             {#if playerTokens.length > 0}
                 <div>Player Links:</div>
                 <ul class="list-disc ms-6">
                     {#each playerTokens as token, idx}
-                        <div>Player {idx + 1} Link: <a href={"/rune-wheel/" + token} class="cursor-pointer underline text-blue-500 hover:text-blue-700" >{window.location.hostname + "/rune-wheel/" + token}</a></div>
+                        <li><a href={"/rune-wheel/" + token} class="cursor-pointer underline text-blue-500 hover:text-blue-700" >Player {idx + 1} Link</a></li>
                     {/each}
                 </ul>
             {/if}

@@ -16,11 +16,13 @@ let listenerPack: {[index: string]: Watcher} = {};
 
 let pingerId: NodeJS.Timeout | undefined;
 function broadcast(key: string, data: string){
-    Object.values(listenerPack[key].conn).forEach(connList => 
-        Object.values(connList).forEach(c => 
-            c.enqueue("data:" + data + "\n\n")
-        )
-    );
+    if (listenerPack.hasOwnProperty(key)) {
+        Object.values(listenerPack[key].conn).forEach(connList => 
+            Object.values(connList).forEach(c => 
+                c.enqueue("data:" + data + "\n\n")
+            )
+        );
+    }    
 }
 
 if (!pingerId) {
