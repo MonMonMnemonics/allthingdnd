@@ -16,7 +16,7 @@ export function encodeToken(token: Token): string {
     encodedToken += "/" + token.seed.toString();
     encodedToken += "/" + (token.gm ? "1" : "0");
 
-    if (token.playerId) {
+    if (token.playerId != undefined) {
         encodedToken += "/" + token.playerId.toString();
     }
 

@@ -1,31 +1,32 @@
 <script lang="ts">
 	import LoadingScreen from "$lib/components/LoadingScreen.svelte";
-	import { generateCSS } from "$lib/helpers/colFilterGenerator";
-	import type { Marker } from "$lib/helpers/rune-wheel";
+	import { generateCSS, hexToRgb } from "$lib/helpers/colFilterGenerator";
 	import { onMount } from "svelte";
     import { page } from "$app/state";
 
-    const wheelN = 9;
-    const playerIdx = [
-        "D61A3C",
-        "48864D",
-        "4A57BA"
-    ]
-
-    let terminalIdx = $state(0);
     let innerIdxShift = $state(0);
     let outerIdxShift = $state(0);
-    let colFilterCss: string[] = $state([]);
+    let colFilterCss: {[index:string]: string} = $state({});
     let loading = $state(true);
 
     let outerCanvas: HTMLCanvasElement;
     let innerCanvas: HTMLCanvasElement;
+    let interimCanvas: HTMLCanvasElement;
 
-    let data: { inner: number[], outer: number[], pad: number[], markers: Marker[] } = $state({
+    let puzzleData: { 
+        inner: number[], 
+        outer: { icoIdx: number, colour: string }[],
+        pad: { icoIdx: number, innerShift: number, outerShift: number }[], 
+        markers: { icoIdx: number, colour: string }[],
+        wheelN: number, 
+        mainCol: string
+    } = $state({
         inner: [],
         outer: [],
         pad: [],
-        markers: []
+        markers: [],
+        wheelN: 0,
+        mainCol: ""
     });
 
     let esListener: EventSource | undefined;
@@ -43,7 +44,32 @@
                         innerIdxShift = data.data.innerShift;
                         outerIdxShift = data.data.outerShift;
                         break;
-                    }                
+                    }
+
+                    case "STATE": {
+                        innerIdxShift = data.data.innerShift;
+                        outerIdxShift = data.data.outerIdxShift;
+
+                        let colList: string[] = [];
+                        colList.push(data.data.colour);
+                        data.data.outerWheel.forEach((e: any) => colList.push(e.colour));
+                        data.data.markers.forEach((e: any) => colList.push(e.colour));
+                        colList = [...new Set(colList)];
+
+                        colFilterCss = Object.fromEntries(colList.map(col => [col, generateCSS(col)]));
+
+                        puzzleData = {
+                            inner: data.data.innerWheel,
+                            outer: data.data.outerWheel,
+                            pad: data.data.pad,
+                            markers: data.data.markers,
+                            wheelN: data.data.innerWheel.length,
+                            mainCol: data.data.colour
+                        };
+
+                        initiatePuzzle();
+                        break;
+                    }
                 }
             }
         };
@@ -55,8 +81,6 @@
             }            
         };
 
-        initiatePuzzle();
-
         return () => {
             if (esListener) {
                 esListener.close();
@@ -65,59 +89,8 @@
     })
 
     async function initiatePuzzle() {
-        colFilterCss = playerIdx.map(hexClr => generateCSS(hexClr));
-
-        let numberBin = [...Array(77).keys()].map(e => e + 1);
-        
-        let innerVal: number[] = [];
-        while (innerVal.length < wheelN) {
-            const randIdx = Math.floor(Math.random()*numberBin.length);
-            innerVal.push(numberBin[randIdx]);
-            numberBin.splice(randIdx, 1);
-        }
-
-        numberBin = [...Array(77).keys()].map(e => e + 1);
-        let outerVal: number[] = []
-        while (outerVal.length < wheelN) {
-            const randIdx = Math.floor(Math.random()*numberBin.length);
-            outerVal.push(numberBin[randIdx]);
-            numberBin.splice(randIdx, 1);
-        }
-
-        numberBin = [...Array(77).keys()].map(e => e + 1);
-        let markers: Marker[] = []
-        while (markers.length < 5) {
-            let idx = 0;
-            while (idx == ((markers.length > 0) ? markers[markers.length - 1].owner : terminalIdx)) {
-                idx = Math.floor(Math.random()*playerIdx.length);
-            }
-
-            const randIdx = Math.floor(Math.random()*numberBin.length);
-            markers.push({
-                icoIdx: numberBin[randIdx],
-                owner: idx
-            });
-            numberBin.splice(randIdx, 1);
-        }
-
-        numberBin = [...Array(77).keys()].map(e => e + 1);
-        let pad: number[] = []
-        while (pad.length < 25) {
-            const randIdx = Math.floor(Math.random()*numberBin.length);
-            pad.push(numberBin[randIdx]);
-            numberBin.splice(randIdx, 1);
-        }
-
-        data = {
-            ...data,
-            inner: innerVal,
-            outer: outerVal,
-            markers: markers,
-            pad: pad
-        }
-
         //-------------- DRAW TO CANVAS --------------
-        const imgIdxs = [...new Set([...innerVal, ...outerVal])];
+        const imgIdxs = [...new Set([...puzzleData.inner, ...puzzleData.outer.map(e => e.icoIdx)])];
         let imgElements: HTMLImageElement[] = []
         
         const imgLoadPromises = imgIdxs.map(idx => {
@@ -144,15 +117,15 @@
             innerCanvas.height = innerCanvasSize[0];
             innerCanvas.width = innerCanvasSize[1];
             
-            innerVal.forEach((icoIdx, idx) => {
+            puzzleData.inner.forEach((icoIdx, idx) => {
                 innerCtx.save();
 
                 innerCtx.translate(
-                    innerCanvas.width*(50 - Math.sin(2*Math.PI*(idx)/wheelN)*32.5)/100,
-                    innerCanvas.height*(50 - Math.cos(2*Math.PI*(idx)/wheelN)*32.5)/100
+                    innerCanvas.width*(50 - Math.sin(2*Math.PI*(idx)/puzzleData.wheelN)*32.5)/100,
+                    innerCanvas.height*(50 - Math.cos(2*Math.PI*(idx)/puzzleData.wheelN)*32.5)/100
                 );
 
-                innerCtx.rotate(-idx/wheelN*2.*Math.PI);
+                innerCtx.rotate(-idx/puzzleData.wheelN*2.*Math.PI);
 
                 innerCtx.drawImage(
                     imgElements[icoIdx], 
@@ -189,11 +162,11 @@
             );
             innerCtx.stroke()
 
-            for (let idx = 0; idx < wheelN; idx++) {
+            for (let idx = 0; idx < puzzleData.wheelN; idx++) {
                 innerCtx.beginPath()
                 innerCtx.moveTo(
-                    innerCanvas.width/2 - innerRingRadius*Math.sin(2*Math.PI*(idx + 0.5)/wheelN),
-                    innerCanvas.height/2 - innerRingRadius*Math.cos(2*Math.PI*(idx + 0.5)/wheelN)
+                    innerCanvas.width/2 - innerRingRadius*Math.sin(2*Math.PI*(idx + 0.5)/puzzleData.wheelN),
+                    innerCanvas.height/2 - innerRingRadius*Math.cos(2*Math.PI*(idx + 0.5)/puzzleData.wheelN)
                 );
                 innerCtx.lineTo(
                     innerCanvas.width/2, 
@@ -204,27 +177,50 @@
         }
         
         const outerCtx = outerCanvas.getContext("2d");
+        const interimCtx = interimCanvas.getContext("2d", { willReadFrequently: true });
         let outerRingRadius = 0;
-        if (outerCtx) {
+        if ((outerCtx) && (interimCtx)) {
             const outerCanvasSize = [
                 outerCanvas.getBoundingClientRect().height,
                 outerCanvas.getBoundingClientRect().width
             ];
             outerCanvas.height = outerCanvasSize[0];
             outerCanvas.width = outerCanvasSize[1];
+
+            interimCanvas.height = outerCanvas.height*0.14;
+            interimCanvas.width = outerCanvas.width*0.14;
             
-            outerVal.forEach((icoIdx, idx) => {
+            puzzleData.outer.forEach((dt, idx) => {
+                const imgCol = hexToRgb(dt.colour);
+                interimCtx.clearRect(0, 0, interimCanvas.width, interimCanvas.height);
+                interimCtx.drawImage(imgElements[dt.icoIdx], 0, 0, interimCanvas.width, interimCanvas.height);
+                interimCtx.save()
+
+                const imageData = interimCtx.getImageData(
+                    0,
+                    0,
+                    interimCanvas.width,
+                    interimCanvas.height
+                );
+                const data = imageData.data;
+                for (let i = 0; i < data.length; i += 4) {
+                    data[i] = imgCol[0];
+                    data[i + 1] = imgCol[1];
+                    data[i + 2] = imgCol[2];
+                }
+                interimCtx.putImageData(imageData, 0, 0);
+
                 outerCtx.save();
 
                 outerCtx.translate(
-                    outerCanvas.width*(50 - Math.sin(2*Math.PI*(idx)/wheelN)*40)/100,
-                    outerCanvas.height*(50 - Math.cos(2*Math.PI*(idx)/wheelN)*40)/100
+                    outerCanvas.width*(50 - Math.sin(2*Math.PI*(idx)/puzzleData.wheelN)*39)/100,
+                    outerCanvas.height*(50 - Math.cos(2*Math.PI*(idx)/puzzleData.wheelN)*39)/100
                 );
 
-                outerCtx.rotate(-idx/wheelN*2.*Math.PI);
+                outerCtx.rotate(-idx/puzzleData.wheelN*2.*Math.PI);
 
                 outerCtx.drawImage(
-                    imgElements[icoIdx], 
+                    interimCanvas, 
                     -outerCanvas.width*0.14/2,
                     -outerCanvas.height*0.14/2,
                     outerCanvas.width*0.14,
@@ -233,17 +229,6 @@
 
                 outerCtx.restore();
             })
-
-            const imageData = outerCtx.getImageData(0, 0, outerCanvas.width, outerCanvas.height);
-            const data = imageData.data;
-
-            for (let i = 0; i < data.length; i += 4) {
-                data[i] = 255;
-                data[i + 1] = 255;
-                data[i + 2] = 255;
-            }
-
-            outerCtx.putImageData(imageData, 0, 0);
 
             outerCtx.strokeStyle = "#FFFFFF";
             outerCtx.lineWidth = 5;
@@ -258,15 +243,15 @@
             );
             outerCtx.stroke()
 
-            for (let idx = 0; idx < wheelN; idx++) {
+            for (let idx = 0; idx < puzzleData.wheelN; idx++) {
                 outerCtx.beginPath()
                 outerCtx.moveTo(
-                    outerCanvas.width/2 - outerRingRadius*Math.sin(2*Math.PI*(idx + 0.5)/wheelN),
-                    outerCanvas.height/2 - outerRingRadius*Math.cos(2*Math.PI*(idx + 0.5)/wheelN)
+                    outerCanvas.width/2 - outerRingRadius*Math.sin(2*Math.PI*(idx + 0.5)/puzzleData.wheelN),
+                    outerCanvas.height/2 - outerRingRadius*Math.cos(2*Math.PI*(idx + 0.5)/puzzleData.wheelN)
                 );
                 outerCtx.lineTo(
-                    outerCanvas.width/2 - innerRingRadius*Math.sin(2*Math.PI*(idx + 0.5)/wheelN), 
-                    outerCanvas.height/2 - innerRingRadius*Math.cos(2*Math.PI*(idx + 0.5)/wheelN)
+                    outerCanvas.width/2 - innerRingRadius*Math.sin(2*Math.PI*(idx + 0.5)/puzzleData.wheelN), 
+                    outerCanvas.height/2 - innerRingRadius*Math.cos(2*Math.PI*(idx + 0.5)/puzzleData.wheelN)
                 );
                 outerCtx.stroke()
             }
@@ -275,22 +260,13 @@
         loading = false;
     }
 
-async function padClick(icoIdx: number) {
-    let innerShift = Math.floor(Math.random()*2*wheelN);
-    while (innerShift == innerIdxShift) {
-        innerShift = Math.floor(Math.random()*2*wheelN);
-    }
-
-    let outerShift = Math.floor(Math.random()*2*wheelN);
-    while (outerShift == outerIdxShift) {
-        outerShift = Math.floor(Math.random()*2*wheelN);
-    }
-    
+async function padClick(padIdx: number) {
     await fetch("/rune-wheel/" + page.params.token + "/listener", {
         method: "POST",
         body: JSON.stringify({
-            innerShift,
-            outerShift
+            icoIdx: puzzleData.pad[padIdx].icoIdx,
+            innerShift: puzzleData.pad[padIdx].innerShift,
+            outerShift: puzzleData.pad[padIdx].outerShift
         }),
         headers: {
             "Content-Type": "application/json"
@@ -303,27 +279,31 @@ async function padClick(icoIdx: number) {
 <LoadingScreen/>
 {/if}
 <div class="w-screen h-screen home overflow-x-hidden overflow-y-auto relative">
+    <canvas 
+        class="hidden" 
+        bind:this={interimCanvas}
+    ></canvas>
     <div class="absolute w-screen h-screen p-5 overflow-x-hidden overflow-y-hidden flex flex-row gap-2 p-7">
         <div class="grow flex flex-col relative">
             <div class="my-auto flex flex-col gap-2 p-7 z-10">
-                <div class="flex flex-row justify-center">
-                    {#each data.markers as dt}
+                <div class="mx-auto grid grid-flow-row grid-cols-5">
+                    {#each puzzleData.markers as dt}
                         <div class="border border-1 aspect-square flex flex-col relative">
                             <div class="my-auto flex flex-row w-full">
                                 <img src={"/src/lib/assets/icons/" + (dt.icoIdx) + ".png"} class="mx-auto aspect-square w-[80%] inverted" draggable="false" alt=""
-                                    style:filter={colFilterCss[dt.owner]}
+                                    style:filter={colFilterCss[dt.colour]}
                                 />
                             </div>
                         </div>
                     {/each}
                 </div>
                 <div class="mx-auto grid grid-flow-col grid-rows-5">
-                    {#each data.pad as icoIdx}
+                    {#each puzzleData.pad as pad, padIdx}
                         <button class="border border-1 aspect-square w-[100%] flex flex-col relative cursor-pointer"
-                            onclick={() => padClick(icoIdx)}
+                            onclick={() => padClick(padIdx)}
                         >
                             <div class="my-auto flex flex-row w-full">
-                                <img src={"/src/lib/assets/icons/" + (icoIdx) + ".png"} class="mx-auto aspect-square w-[80%] inverted" draggable="false" alt=""/>
+                                <img src={"/src/lib/assets/icons/" + (pad.icoIdx) + ".png"} class="mx-auto aspect-square w-[80%] inverted" draggable="false" alt=""/>
                             </div>
                         </button>
                     {/each}
@@ -333,19 +313,19 @@ async function padClick(icoIdx: number) {
         <div class="h-full aspect-square relative">
             <div class="h-3/5 aspect-square absolute top-1/2 left-1/2 relative" style="translate: -50% -50%;">
                 <div class="h-1/5 rounded-full border-2 border aspect-square absolute top-1/2 left-1/2 relative z-2" 
-                    style="translate: -50% -50%; border-color: #{playerIdx[terminalIdx]}; background: #{playerIdx[terminalIdx]}">
+                    style="translate: -50% -50%; border-color: {puzzleData.mainCol}; background: {puzzleData.mainCol}">
                 </div>
                 <canvas 
                     class="h-full w-full absolute top-1/2 left-1/2 transition-all duration-2000" 
                     style="translate: -50% -50%;" 
-                    style:rotate="-{innerIdxShift/wheelN}turn"
+                    style:rotate="{-1*innerIdxShift/puzzleData.wheelN}turn"
                     bind:this={innerCanvas}
                 ></canvas>
             </div>
             <canvas 
                 class="h-full w-full absolute top-1/2 left-1/2 transition-all duration-2000" 
                 style="translate: -50% -50%;"
-                style:rotate="-{outerIdxShift/wheelN}turn"
+                style:rotate="{-1*outerIdxShift/puzzleData.wheelN}turn"
                 bind:this={outerCanvas}                
             ></canvas>
         </div>

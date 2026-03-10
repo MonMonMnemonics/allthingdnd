@@ -11,7 +11,7 @@ export async function GET(req) {
         const token = decodeToken(encodedToken);
 
         if (token) {
-            const body = addPubSubListener(token.type + "-" + token.nPlayer.toString() + "-" + token.seed.toString(), ipAddr);
+            const body = addPubSubListener(token, ipAddr);
             return new Response(body, { headers: pubSubHeader });
         }      
 
@@ -29,7 +29,7 @@ export async function POST(req) {
         const token = decodeToken(encodedToken);
 
         if (token) {
-            broadcastDt(token.type + "-" + token.nPlayer.toString() + "-" + token.seed.toString(), {
+            broadcastDt(token, {
                 flag: 'USER-INPUT',
                 data: {
                     innerShift: body.innerShift ?? 0,

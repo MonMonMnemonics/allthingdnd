@@ -15,24 +15,65 @@ function rgbToHex(r: number, g: number, b: number) {
   return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
 }
 
-function hexToRgb(hex: string): number[] {
-  const expandedHex = expandHex(hex);
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(expandedHex);
-  return result
-    ? [
-        parseInt(result[1], 16),
-        parseInt(result[2], 16),
-        parseInt(result[3], 16),
-      ]
-    : [0, 0, 0];
-}
-
 function trimRgb(rgb: string) {
   const [r, g, b] = rgb
     .replace(/rgb\(|\) /i, "")
     .split(",")
     .map((x: string) => parseInt(x));
   return [r, g, b];
+}
+
+function hexToHsl (hex: string) {
+  hex = hex.replace(/#/g, '');
+  if (hex.length === 3) {
+    hex = hex.split('').map(function(h) { return h + h; }).join('');
+  }
+  const result = /^([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})[da-z]{0,0}$/i.exec(hex);
+  if (!result) {
+    return null;
+  }
+  let r = parseInt(result[1], 16);
+  let g = parseInt(result[2], 16);
+  let b = parseInt(result[3], 16);
+
+  r /= 255;
+  g /= 255;
+  b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h: number = 0;
+  let s: number = 0;
+  let l = (max + min) / 2;
+
+  if (max === min) {
+    h = s = 0;
+  } else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+
+  s = Math.round(s * 100);
+  l = Math.round(l * 100);
+  h = Math.round(h * 360);
+
+  return { h: h, s: s, l: l };
+};
+
+function hslToHex(hsl: {h: number, s: number, l: number}): string {
+  const l = hsl.l / 100;
+  const a = hsl.s * Math.min(l, 1 - l) / 100;
+  const f = (n: number) => {
+    const k = (n + hsl.h / 30) % 12;
+    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.round(255 * color).toString(16).padStart(2, '0').toUpperCase();
+  };
+
+  return `#${f(0)}${f(8)}${f(4)}`;
 }
 
 class Color {
@@ -339,6 +380,24 @@ class Solver {
   }
 }
 
+export const colourSeed = [
+    "#D61A3C",
+    "#48864D",
+    "#4A57BA"
+];
+
+export function hexToRgb(hex: string): number[] {
+  const expandedHex = expandHex(hex);
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(expandedHex);
+  return result
+    ? [
+        parseInt(result[1], 16),
+        parseInt(result[2], 16),
+        parseInt(result[3], 16),
+      ]
+    : [0, 0, 0];
+}
+
 export function generateCSS(input: string) {
   if (input[0] != "#") {
     input = "#" + input;
@@ -350,4 +409,22 @@ export function generateCSS(input: string) {
   const solver = new Solver(color);
   const result = solver.solve();
   return result;
+}
+
+export function generateColourScheme(seed: string, n: number): string[] {
+  const res: string[] = [seed];
+  const hsl = hexToHsl(seed);
+
+  if ((!hsl) || (n < 2)) {
+    return(res);
+  }
+
+  const angleStep = Math.floor(360/n);
+
+  while (res.length < n) {
+    hsl.h = (hsl.h + angleStep) % 360;
+    res.push(hslToHex(hsl));
+  }
+
+  return (res);
 }

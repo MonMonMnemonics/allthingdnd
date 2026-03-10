@@ -1,3 +1,5 @@
+import { PuzzleCode, type Token } from "$lib/helpers/tokenization";
+import { RuneWheel } from "$lib/helpers/rune-wheel";
 import type { ReadableStreamDefaultController } from "stream/web";
 
 export const pubSubHeader = {
@@ -7,9 +9,17 @@ export const pubSubHeader = {
     'X-Accel-Buffering': 'no'
 };
 
+export type PuzzleState = {
+    progress: number,
+    colour: string[],
+    resetState: () => void,
+    getState: (idx: number) => Object,
+}
+
 type Watcher = {
     conn: {[index: string]: {[index: string]: ReadableStreamDefaultController}},
-    staleCount: number
+    staleCount: number,
+    state: RuneWheel
 };
 
 let listenerPack: {[index: string]: Watcher} = {};
@@ -37,30 +47,38 @@ if (!pingerId) {
     }, 10*1000);
 }
 
-export function broadcastDt(token: string, data: Object) {
-    broadcast(token, JSON.stringify(data));
+export function broadcastDt(token: Token, data: Object) {
+    broadcast(token.type + "-" + token.nPlayer.toString() + "-" + token.seed.toString(), JSON.stringify(data));
 }
 
-export function addPubSubListener(token: string, ip: string): ReadableStream {
-    if (!listenerPack.hasOwnProperty(token)) {
-        listenerPack[token] = {
+export function addPubSubListener(token: Token, ip: string): ReadableStream {
+    const listenerId = token.type + "-" + token.nPlayer.toString() + "-" + token.seed.toString();
+    if (!listenerPack.hasOwnProperty(listenerId)) {
+        listenerPack[listenerId] = {
             conn: {},
-            staleCount: 0
+            staleCount: 0,
+            state: new RuneWheel(token)
         };
     }
 
-    if (!listenerPack[token].conn.hasOwnProperty(ip)) {
-        listenerPack[token].conn[ip] = {};
+    if (!listenerPack[listenerId].conn.hasOwnProperty(ip)) {
+        listenerPack[listenerId].conn[ip] = {};
     }
 
     const connId = Date.now();
-
     const body = new ReadableStream({
         start(controller) {
-            listenerPack[token].conn[ip][connId] = controller;
+            listenerPack[listenerId].conn[ip][connId] = controller;
+
+            if (token.type == PuzzleCode.RUNE_WHEEL) {
+                controller.enqueue("data:" + JSON.stringify({
+                    flag: "STATE",
+                    data: listenerPack[listenerId].state.getState(token.playerId ?? 0)
+                }) + "\n\n")
+            }
         },
         cancel() {
-            delete listenerPack[token].conn[ip][connId];
+            delete listenerPack[listenerId].conn[ip][connId];
         },
     });
 
