@@ -1,0 +1,71 @@
+.animation-shake {
+    animation-name: shake;
+    animation-duration: 0.5s;
+    animation-timing-function: cubic-bezier(.36,.07,.19,.97);
+    animation-fill-mode: both;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0) translateY(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px) translateY(5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px) translateY(-5px); }
+}
+
+.animation-ripple {
+    animation-name: ripple;
+    animation-duration: 1s;
+    animation-timing-function: linear;
+}
+
+@keyframes ripple {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(3);
+        opacity: 0;
+    }
+}
+
+.animation-heartbeat {
+    animation-name: heartbeat;
+    animation-duration: 2s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+}
+
+@keyframes heartbeat {
+    0% {
+        scale: 1;
+    }
+
+    50% {
+        scale: 1.5;
+    }
+
+    100% {
+        scale: 1;
+    }
+}
+
+.animation-heartbeat2 {
+    animation-name: heartbeat2;
+    animation-duration: 2s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+}
+
+@keyframes heartbeat2 {
+    0% {
+        scale: 1;
+    }
+
+    50% {
+        scale: 1.2;
+    }
+
+    100% {
+        scale: 1;
+    }
+}

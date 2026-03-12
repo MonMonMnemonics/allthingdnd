@@ -3,15 +3,18 @@
 	import { generateCSS, hexToRgb } from "$lib/helpers/colFilterGenerator";
 	import { onMount } from "svelte";
     import { page } from "$app/state";
+    import "./animation.css"
 
     let innerIdxShift = $state(0);
     let outerIdxShift = $state(0);
+    let progress = $state(0);
     let colFilterCss: {[index:string]: string} = $state({});
     let loading = $state(true);
 
     let outerCanvas: HTMLCanvasElement;
     let innerCanvas: HTMLCanvasElement;
     let interimCanvas: HTMLCanvasElement;
+    let wheelDiv: HTMLDivElement;
 
     let puzzleData: { 
         inner: number[], 
@@ -43,6 +46,10 @@
                     case "USER-INPUT": {
                         innerIdxShift = data.data.innerShift;
                         outerIdxShift = data.data.outerShift;
+                        progress = data.data.progress;
+                        if (data.data.result == false) {
+                            wheelDiv.classList.add("animation-shake");
+                        }
                         break;
                     }
 
@@ -287,20 +294,43 @@ async function padClick(padIdx: number) {
         <div class="grow flex flex-col relative">
             <div class="my-auto flex flex-col gap-2 p-7 z-10">
                 <div class="mx-auto grid grid-flow-row grid-cols-5">
-                    {#each puzzleData.markers as dt}
-                        <div class="border border-1 aspect-square flex flex-col relative">
+                    {#each puzzleData.markers as dt, idx}
+                        <div class="border border-1 aspect-square flex flex-col relative pointer-events-none">
                             <div class="my-auto flex flex-row w-full">
-                                <img src={"/src/lib/assets/icons/" + (dt.icoIdx) + ".png"} class="mx-auto aspect-square w-[80%] inverted" draggable="false" alt=""
+                                <img src={"/src/lib/assets/icons/" + (dt.icoIdx) + ".png"} class="mx-auto aspect-square w-[80%] inverted z-1" 
+                                    class:animation-heartbeat2={idx < progress}
+                                    draggable="false" alt=""
                                     style:filter={colFilterCss[dt.colour]}
                                 />
                             </div>
+                            <img src={"/src/lib/assets/icons/" + (dt.icoIdx) + ".png"} 
+                                class="mx-auto aspect-square w-[80%] inverted absolute top-1/2 left-1/2 -translate-1/2" 
+                                draggable="false" alt="" class:animation-heartbeat={idx < progress}
+                                class:hidden={idx >= progress}
+                                style:filter={colFilterCss[dt.colour] + " blur(4px)"}
+                            />
                         </div>
                     {/each}
                 </div>
                 <div class="mx-auto grid grid-flow-col grid-rows-5">
                     {#each puzzleData.pad as pad, padIdx}
-                        <button class="border border-1 aspect-square w-[100%] flex flex-col relative cursor-pointer"
-                            onclick={() => padClick(padIdx)}
+                        <button class="border border-1 aspect-square w-[100%] flex flex-col relative cursor-pointer z-2 overflow-visible"
+                            onclick={(ev) =>  {
+                                padClick(padIdx);
+
+                                const rippleImg = document.createElement("img");
+                                rippleImg.className = "absolute aspect-square w-[80%] top-1/2 left-1/2 -translate-1/2 inverted pointer-events-none";
+                                rippleImg.src = "/src/lib/assets/icons/" + (pad.icoIdx) + ".png";
+                                rippleImg.onload = (e) => {
+                                    const target = e.currentTarget as HTMLImageElement;
+                                    target.classList.add("animation-ripple")
+                                }
+                                rippleImg.onanimationend = () => {
+                                    rippleImg.remove();
+                                }
+
+                                ev.currentTarget.appendChild(rippleImg);
+                            }}
                         >
                             <div class="my-auto flex flex-row w-full">
                                 <img src={"/src/lib/assets/icons/" + (pad.icoIdx) + ".png"} class="mx-auto aspect-square w-[80%] inverted" draggable="false" alt=""/>
@@ -310,7 +340,16 @@ async function padClick(padIdx: number) {
                 </div>
             </div>
         </div>
-        <div class="h-full aspect-square relative">
+        <div class="h-full aspect-square relative" 
+            bind:this={wheelDiv}
+            onanimationend={(ev) => {
+                for (const className of ev.currentTarget.classList) {
+                    if (className.indexOf("animation-") == 0) {
+                        ev.currentTarget.classList.remove(className);
+                    }
+                }
+            }}
+        >
             <div class="h-3/5 aspect-square absolute top-1/2 left-1/2 relative" style="translate: -50% -50%;">
                 <div class="h-1/5 rounded-full border-2 border aspect-square absolute top-1/2 left-1/2 relative z-2" 
                     style="translate: -50% -50%; border-color: {puzzleData.mainCol}; background: {puzzleData.mainCol}">

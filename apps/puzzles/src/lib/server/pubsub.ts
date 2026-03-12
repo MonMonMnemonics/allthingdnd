@@ -47,6 +47,19 @@ if (!pingerId) {
     }, 10*1000);
 }
 
+export function getWatcherState(token: Token) {
+    const key = token.type + "-" + token.nPlayer.toString() + "-" + token.seed.toString();
+    if (!listenerPack.hasOwnProperty(key)) {
+        return null;
+    }
+
+    if (token.type == PuzzleCode.RUNE_WHEEL) {
+        return listenerPack[key].state as RuneWheel;
+    } else {
+        return null;
+    }
+}
+
 export function broadcastDt(token: Token, data: Object) {
     broadcast(token.type + "-" + token.nPlayer.toString() + "-" + token.seed.toString(), JSON.stringify(data));
 }
@@ -71,10 +84,13 @@ export function addPubSubListener(token: Token, ip: string): ReadableStream {
             listenerPack[listenerId].conn[ip][connId] = controller;
 
             if (token.type == PuzzleCode.RUNE_WHEEL) {
-                controller.enqueue("data:" + JSON.stringify({
-                    flag: "STATE",
-                    data: listenerPack[listenerId].state.getState(token.playerId ?? 0)
-                }) + "\n\n")
+                const state = listenerPack[listenerId].state as RuneWheel;
+                if (state.progress < state.keySequence.length) {
+                    controller.enqueue("data:" + JSON.stringify({
+                        flag: "STATE",
+                        data: state.getState(token.playerId ?? 0)
+                    }) + "\n\n")
+                }
             }
         },
         cancel() {

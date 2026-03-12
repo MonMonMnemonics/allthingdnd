@@ -1,6 +1,7 @@
 import { decrypt } from "$lib/helpers/encrypter.js";
+import type { RuneWheel } from "$lib/helpers/rune-wheel.js";
 import { decodeToken } from "$lib/helpers/tokenization.js";
-import { addPubSubListener, broadcastDt, pubSubHeader } from "$lib/server/pubsub";
+import { addPubSubListener, broadcastDt, getWatcherState, pubSubHeader } from "$lib/server/pubsub";
 import { text } from '@sveltejs/kit';
 
 export async function GET(req) {
@@ -29,13 +30,38 @@ export async function POST(req) {
         const token = decodeToken(encodedToken);
 
         if (token) {
-            broadcastDt(token, {
-                flag: 'USER-INPUT',
-                data: {
-                    innerShift: body.innerShift ?? 0,
-                    outerShift: body.outerShift ?? 0,
+            let puzzState = getWatcherState(token);
+            if (puzzState != null) {
+                puzzState = puzzState as RuneWheel;
+                const correctAnswer = puzzState.keySequence[puzzState.progress];
+                
+                if ((body.icoIdx == correctAnswer.icoIdx) && (token.playerId == correctAnswer.owner)) {
+                    puzzState.progress += 1;
+
+                    if (puzzState.progress < puzzState.keySequence.length) {
+                        broadcastDt(token, {
+                            flag: 'USER-INPUT',
+                            data: {
+                                result: true,
+                                progress: puzzState.progress,
+                                innerShift: body.innerShift ?? 0,
+                                outerShift: body.outerShift ?? 0,
+                            }
+                        });
+                    }
+                } else {
+                    puzzState.progress = 0;
+                    broadcastDt(token, {
+                        flag: 'USER-INPUT',
+                        data: {
+                            result: false,
+                            progress: puzzState.progress,
+                            innerShift: 0,
+                            outerShift: 0,
+                        }
+                    });
                 }
-            });
+            }
 
             return text("OK", { status: 200 });
         }      

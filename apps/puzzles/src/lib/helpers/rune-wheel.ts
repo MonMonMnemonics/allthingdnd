@@ -13,15 +13,6 @@ export type Marker = {
 }
 
 export class RuneWheel implements PuzzleState {
-    private initInnerWheel: {[index: number]: number[]} = {};
-    private initOuterWheel: {[index: number]: Marker[]} = {};
-    private keySequence: {
-        icoIdx: number, 
-        owner: number,
-        innerShift: number,
-        outerShift: number
-    }[] = [];
-
     private lockMarkers: Marker[] = [];
     private innerWheel: {[index: number]: number[]} = {};
     private outerWheel: {[index: number]: Marker[]} = {};
@@ -29,6 +20,12 @@ export class RuneWheel implements PuzzleState {
 
     progress: number = 0;
     colour: string[] = [];
+    public keySequence: {
+        icoIdx: number, 
+        owner: number,
+        innerShift: number,
+        outerShift: number
+    }[] = [];
 
     constructor(token: Token) {
         const globalRandGen = new MersenneTwister(token.seed);
@@ -172,7 +169,6 @@ export class RuneWheel implements PuzzleState {
                 .map(({ value }) => value)
         }
 
-        this.initInnerWheel = JSON.parse(JSON.stringify(this.innerWheel));
         this.outerWheel = JSON.parse(JSON.stringify(this.outerWheel));
 
         //------------- KEY SEQUENCE GENERATION -------------
@@ -216,11 +212,7 @@ export class RuneWheel implements PuzzleState {
                 .map(({ value }) => value)
     };
 
-    resetState() {
-        this.innerWheel = JSON.parse(JSON.stringify(this.initInnerWheel));
-        this.outerWheel = JSON.parse(JSON.stringify(this.initOuterWheel));
-    }
-
+    resetState(){};
     getState(playerId: number) {
         return ({
             innerWheel: this.innerWheel[playerId],
