@@ -33,22 +33,26 @@ export async function POST(req) {
             let puzzState = getWatcherState(token);
             if (puzzState != null) {
                 puzzState = puzzState as RuneWheel;
+                if (puzzState.progress == puzzState.keySequence.length) {
+                    return text("OK", { status: 200 });
+                }
+
                 const correctAnswer = puzzState.keySequence[puzzState.progress];
                 
                 if ((body.icoIdx == correctAnswer.icoIdx) && (token.playerId == correctAnswer.owner)) {
-                    puzzState.progress += 1;
-
                     if (puzzState.progress < puzzState.keySequence.length) {
                         broadcastDt(token, {
                             flag: 'USER-INPUT',
                             data: {
                                 result: true,
-                                progress: puzzState.progress,
+                                progress: puzzState.progress + 1,
                                 innerShift: body.innerShift ?? 0,
                                 outerShift: body.outerShift ?? 0,
                             }
                         });
                     }
+
+                    puzzState.progress += 1;
                 } else {
                     puzzState.progress = 0;
                     broadcastDt(token, {

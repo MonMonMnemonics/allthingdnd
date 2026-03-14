@@ -69,3 +69,65 @@
         scale: 1;
     }
 }
+
+/* Zigzag edge https://css-tip.com/zig-zag-edge/ */
+.animation-sequence-wheel-final {
+    animation-name: sequence-wheel-final;
+    animation-duration: 6s;
+    animation-timing-function: ease-in;
+    animation-iteration-count: 1;
+    animation-fill-mode: forwards;
+}
+
+@keyframes sequence-wheel-final {
+    0% {
+        rotate: 0turn;
+        scale:1;
+    }
+
+    100% {
+        rotate: 5turn;
+        scale:3;
+    }
+}
+
+.animation-sequence-center-final {
+    animation-name: sequence-center-final;
+    animation-duration: 6s;
+    animation-timing-function: ease-in;
+    animation-iteration-count: 1;
+    animation-fill-mode: forwards;
+}
+
+@keyframes sequence-center-final {
+    0% {
+        scale: 1;
+    }
+
+    100% {
+        scale: 10;
+        background-color: #1a1a1a;
+        border-color: #1a1a1a;        
+    }
+}
+
+.animation-bounce {
+    animation-name: bounce;
+    animation-duration: 2s;
+    animation-timing-function: ease;
+    animation-iteration-count: infinite;
+}
+
+@keyframes bounce {
+    0% {
+        transform: translateY(0%);
+    }
+
+    50% {
+        transform: translateY(10%);
+    }
+
+    100% {
+        transform: translateY(0%);
+    }
+}

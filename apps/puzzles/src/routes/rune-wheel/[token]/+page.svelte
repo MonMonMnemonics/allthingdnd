@@ -4,6 +4,7 @@
 	import { onMount } from "svelte";
     import { page } from "$app/state";
     import "./animation.css"
+	import RejectedScreen from "$lib/components/RejectedScreen.svelte";
 
     let innerIdxShift = $state(0);
     let outerIdxShift = $state(0);
@@ -15,6 +16,10 @@
     let innerCanvas: HTMLCanvasElement;
     let interimCanvas: HTMLCanvasElement;
     let wheelDiv: HTMLDivElement;
+    let centerWheelDiv: HTMLDivElement;
+
+    let finalCard = $state(false);
+    let rejected = $state(false);
 
     let puzzleData: { 
         inner: number[], 
@@ -34,6 +39,13 @@
 
     let esListener: EventSource | undefined;
 
+    $effect(() => {
+        if ((puzzleData.markers.length > 0) && (puzzleData.markers.length == progress)) {
+            wheelDiv.classList.add("animation-sequence-wheel-final");
+            centerWheelDiv.classList.add("animation-sequence-center-final");
+        }
+    });
+
     onMount(() => {
         //-------------- START EVENT SOURCE --------------
         esListener = new EventSource("/rune-wheel/" + page.params.token + "/listener");
@@ -44,18 +56,24 @@
             if (data.hasOwnProperty("flag")) {
                 switch (data.flag) {
                     case "USER-INPUT": {
-                        innerIdxShift = data.data.innerShift;
-                        outerIdxShift = data.data.outerShift;
                         progress = data.data.progress;
-                        if (data.data.result == false) {
+                        if (progress == puzzleData.markers.length) {
+                            break;
+                        } else if (data.data.result == false) {
                             wheelDiv.classList.add("animation-shake");
+                            innerIdxShift = 0;
+                            outerIdxShift = 0;
+                        } else {
+                            innerIdxShift = data.data.innerShift;
+                            outerIdxShift = data.data.outerShift;
                         }
                         break;
                     }
 
                     case "STATE": {
                         innerIdxShift = data.data.innerShift;
-                        outerIdxShift = data.data.outerIdxShift;
+                        outerIdxShift = data.data.outerShift;
+                        progress = data.data.progress;
 
                         let colList: string[] = [];
                         colList.push(data.data.colour);
@@ -75,6 +93,13 @@
                         };
 
                         initiatePuzzle();
+                        break;
+                    }
+
+                    case "REJECTED": {
+                        loading = false;
+                        rejected = true;
+                        esListener?.close();
                         break;
                     }
                 }
@@ -280,6 +305,7 @@ async function padClick(padIdx: number) {
         }
     })
 }
+
 </script>
 
 {#if loading}
@@ -290,31 +316,35 @@ async function padClick(padIdx: number) {
         class="hidden" 
         bind:this={interimCanvas}
     ></canvas>
-    <div class="absolute w-screen h-screen p-5 overflow-x-hidden overflow-y-hidden flex flex-row gap-2 p-7">
+    <div class="absolute w-screen h-screen p-5 overflow-x-hidden overflow-y-hidden flex flex-row gap-2 p-7 top-0 left-0">
         <div class="grow flex flex-col relative">
             <div class="my-auto flex flex-col gap-2 p-7 z-10">
-                <div class="mx-auto grid grid-flow-row grid-cols-5">
+                <div class="mx-auto grid grid-flow-row grid-cols-5 w-[60%]">
                     {#each puzzleData.markers as dt, idx}
-                        <div class="border border-1 aspect-square flex flex-col relative pointer-events-none">
-                            <div class="my-auto flex flex-row w-full">
-                                <img src={"/src/lib/assets/icons/" + (dt.icoIdx) + ".png"} class="mx-auto aspect-square w-[80%] inverted z-1" 
-                                    class:animation-heartbeat2={idx < progress}
-                                    draggable="false" alt=""
-                                    style:filter={colFilterCss[dt.colour]}
+                        <div class="border border-1 aspect-square flex flex-col relative pointer-events-none h-[100%]">
+                            {#if dt.icoIdx >= 0}
+                                <div class="my-auto flex flex-row w-full">
+                                    <img src={"/src/lib/assets/icons/" + (dt.icoIdx) + ".png"} class="mx-auto aspect-square w-[80%] inverted z-1" 
+                                        class:animation-heartbeat2={idx < progress}
+                                        draggable="false" alt=""
+                                        style:filter={colFilterCss[dt.colour]}
+                                    />
+                                </div>
+                                <img src={"/src/lib/assets/icons/" + (dt.icoIdx) + ".png"} 
+                                    class="mx-auto aspect-square w-[80%] inverted absolute top-1/2 left-1/2 -translate-1/2" 
+                                    draggable="false" alt="" class:animation-heartbeat={idx < progress}
+                                    class:hidden={idx >= progress}
+                                    style:filter={colFilterCss[dt.colour] + " blur(4px)"}
                                 />
-                            </div>
-                            <img src={"/src/lib/assets/icons/" + (dt.icoIdx) + ".png"} 
-                                class="mx-auto aspect-square w-[80%] inverted absolute top-1/2 left-1/2 -translate-1/2" 
-                                draggable="false" alt="" class:animation-heartbeat={idx < progress}
-                                class:hidden={idx >= progress}
-                                style:filter={colFilterCss[dt.colour] + " blur(4px)"}
-                            />
+                            {:else}
+                                <div class="my-auto flex aspect-square w-[80%] flex-row w-full"></div>
+                            {/if}
                         </div>
                     {/each}
                 </div>
-                <div class="mx-auto grid grid-flow-col grid-rows-5">
+                <div class="mx-auto grid grid-flow-row grid-cols-5 w-[60%]">
                     {#each puzzleData.pad as pad, padIdx}
-                        <button class="border border-1 aspect-square w-[100%] flex flex-col relative cursor-pointer z-2 overflow-visible"
+                        <button class="border border-1 aspect-square h-[100%] flex flex-col relative cursor-pointer z-2 overflow-visible"
                             onclick={(ev) =>  {
                                 padClick(padIdx);
 
@@ -340,18 +370,22 @@ async function padClick(padIdx: number) {
                 </div>
             </div>
         </div>
-        <div class="h-full aspect-square relative" 
+        <div class="h-full aspect-square relative z-11" 
             bind:this={wheelDiv}
             onanimationend={(ev) => {
-                for (const className of ev.currentTarget.classList) {
-                    if (className.indexOf("animation-") == 0) {
-                        ev.currentTarget.classList.remove(className);
+                if (puzzleData.markers.length > progress) {
+                    for (const className of ev.currentTarget.classList) {
+                        if (className.indexOf("animation-") == 0) {                            
+                            ev.currentTarget.classList.remove(className);
+                        }
                     }
+                } else if (puzzleData.markers.length > 0) {
+                    finalCard = true;
                 }
             }}
         >
-            <div class="h-3/5 aspect-square absolute top-1/2 left-1/2 relative" style="translate: -50% -50%;">
-                <div class="h-1/5 rounded-full border-2 border aspect-square absolute top-1/2 left-1/2 relative z-2" 
+            <div class="h-3/5 aspect-square absolute top-1/2 left-1/2 relative z-11" style="translate: -50% -50%;">
+                <div bind:this={centerWheelDiv} class="h-1/5 rounded-full border-2 border aspect-square absolute top-1/2 left-1/2 relative z-12" 
                     style="translate: -50% -50%; border-color: {puzzleData.mainCol}; background: {puzzleData.mainCol}">
                 </div>
                 <canvas 
@@ -369,4 +403,19 @@ async function padClick(padIdx: number) {
             ></canvas>
         </div>
     </div>
+    {#if finalCard}
+        <div class="flex flex-col h-screen w-screen absolute top-0 left-0 z-20">
+            <div class="flex flex-row w-full my-auto">
+                <div class="mx-auto">
+                    <div class="flex flex-col items-center animation-bounce">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chest-icon lucide-chest"><path d="M8 19a2 2 0 0 0 2-2V9a4 4 0 0 0-8 0v8a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a4 4 0 0 0-4-4H6"/><path d="M2 11h20"/><path d="M16 11v3"/></svg>
+                        <div class="font-bold text-3xl">The treasure is yours to claim</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {/if}
+    {#if rejected}
+        <RejectedScreen/>
+    {/if}
 </div>

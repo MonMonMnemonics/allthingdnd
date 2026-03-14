@@ -14,6 +14,7 @@ export type Marker = {
 
 export class RuneWheel implements PuzzleState {
     private lockMarkers: Marker[] = [];
+    private lockVisibility : {[index: number]: boolean[]} = {};
     private innerWheel: {[index: number]: number[]} = {};
     private outerWheel: {[index: number]: Marker[]} = {};
     private pad: {[index: number]: { icoIdx: number, innerShift: number, outerShift: number }[]} = {};
@@ -34,6 +35,7 @@ export class RuneWheel implements PuzzleState {
             this.innerWheel[playerId] = [];
             this.outerWheel[playerId] = [];
             this.pad[playerId] = [];
+            this.lockVisibility[playerId] = [];
         }
 
         //------------- LOCK MARKER GENERATION -------------
@@ -171,6 +173,28 @@ export class RuneWheel implements PuzzleState {
 
         this.outerWheel = JSON.parse(JSON.stringify(this.outerWheel));
 
+        //------------- GENERATE LOCK VISIBILITY -------------
+        for (let idx = 0; idx < this.lockMarkers.length; idx++) {
+            const binaryString = Math.floor(globalRandGen.random()*(Math.pow(2, token.nPlayer) - 2) + 1)
+                .toString(2)
+                .padStart(token.nPlayer, "0");
+
+            for (let playerId = 0; playerId < token.nPlayer; playerId++) {
+                this.lockVisibility[playerId].push(binaryString[playerId] == "1");
+            }
+        }
+
+        for (let playerId = 0; playerId < token.nPlayer; playerId++) {
+            let visibleMarkers = this.lockVisibility[playerId].reduce((acc, curr) => acc + (curr ? 1 : 0), 0);
+            let idxBin = [...Array(this.lockMarkers.length).keys()].filter(idx => !this.lockVisibility[playerId][idx]);
+            while (visibleMarkers*3 < this.lockMarkers.length) {
+                const idx = Math.floor(globalRandGen.random()*idxBin.length);
+                this.lockVisibility[playerId][idx] = true;
+                delete idxBin[idx];
+                visibleMarkers += 1;
+            }
+        }
+
         //------------- KEY SEQUENCE GENERATION -------------
         let innerShift = 0;
         let outerShift = 0;
@@ -221,12 +245,14 @@ export class RuneWheel implements PuzzleState {
                 colour: this.colour[e.owner]
             })),
             pad: this.pad[playerId],
-            innerShift: this.progress > 0 ? this.keySequence[this.progress].innerShift : 0,
-            outerShift: this.progress > 0 ? this.keySequence[this.progress].outerShift : 0,
+            innerShift: ((this.progress) > 0 && (this.progress <= this.keySequence.length)) ? this.keySequence[this.progress - 1].innerShift : 0,
+            outerShift: ((this.progress) > 0 && (this.progress <= this.keySequence.length)) ? this.keySequence[this.progress - 1].outerShift : 0,
             colour: this.colour[playerId],
-            markers: this.lockMarkers.map(e => ({
-                icoIdx: e.icoIdx,
-                colour: this.colour[e.owner]
+            progress: this.progress,
+            markers: this.lockMarkers.map((e, idx) => ({
+                icoIdx: this.lockVisibility[playerId][idx] ? e.icoIdx : -1,
+                colour: this.colour[e.owner],
+                progress: this.progress
             })),
         });
     }
