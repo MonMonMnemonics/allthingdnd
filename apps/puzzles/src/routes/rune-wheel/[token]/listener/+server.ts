@@ -39,6 +39,10 @@ export async function POST(req) {
 
                 const correctAnswer = puzzState.keySequence[puzzState.progress];
                 
+                if (token.gm) {
+                    token.playerId = body.playerId;
+                }
+                
                 if ((body.icoIdx == correctAnswer.icoIdx) && (token.playerId == correctAnswer.owner)) {
                     if (puzzState.progress < puzzState.keySequence.length) {
                         broadcastDt(token, {

@@ -25,9 +25,9 @@
     }
 </script>
 
-<div class="w-screen h-screen overflow-hidden relative p-3">
-    <div class="w-full h-full border-3 rounded-xl flex flex-row p-5">
-        <div class="h-full flex flex-col gap-2">
+<div class="w-screen h-screen overflow-hidden flex flex-col relative p-3">
+    <div class="w-full my-auto flex flex-row">
+        <div class="mx-auto border-3 rounded-xl p-6 text-2xl flex flex-col gap-2">
             <div class="flex flex-row items-center gap-3">
                 <div>Number of Player:</div>
                 <select 
@@ -46,7 +46,7 @@
             <div class="flex flex-row items-center gap-3">
                 <div>Seed (optional):</div>
                 <input bind:value={seed} type="number" max="100000" min="0" step="1" class="py-1 px-2" />
-                <Dices class="cursor-pointer" onclick={() => {seed = Math.floor(Math.random()*10000)}}/>
+                <Dices class="cursor-pointer" size={40} onclick={() => {seed = Math.floor(Math.random()*10000)}}/>
             </div>
             <button class="border rounded-xl p-2 hover:font-bold hover:border-3 cursor-pointer"
                 onclick={getTokens}

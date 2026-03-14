@@ -19,7 +19,8 @@ export type PuzzleState = {
 type Watcher = {
     conn: {[index: string]: {[index: string]: {
         controller: ReadableStreamDefaultController,
-        playerId: number | undefined
+        playerId: number | undefined,
+        gm: boolean
     }}},
     staleCount: number,
     state: RuneWheel
@@ -28,14 +29,26 @@ type Watcher = {
 let listenerPack: {[index: string]: Watcher} = {};
 
 let pingerId: NodeJS.Timeout | undefined;
-function broadcast(key: string, data: string){
+function broadcast(key: string, data: string, gmOnly: boolean = false){
     if (listenerPack.hasOwnProperty(key)) {
-        Object.values(listenerPack[key].conn).forEach(connList => 
-            Object.values(connList).forEach(c => 
-                c.controller.enqueue("data:" + data + "\n\n")
-            )
-        );
+        if (gmOnly) {
+            Object.values(listenerPack[key].conn).forEach(connList => 
+                Object.values(connList).filter(c => c.gm).forEach(c => 
+                    c.controller.enqueue("data:" + data + "\n\n")
+                )
+            );
+        } else {
+            Object.values(listenerPack[key].conn).forEach(connList => 
+                Object.values(connList).forEach(c => 
+                    c.controller.enqueue("data:" + data + "\n\n")
+                )
+            );
+        }
     }    
+}
+
+function getTokenId(token: Token) {
+    return token.type + "-" + token.nPlayer.toString() + "-" + token.seed.toString();
 }
 
 if (!pingerId) {
@@ -57,7 +70,7 @@ if (!pingerId) {
 }
 
 export function getWatcherState(token: Token) {
-    const key = token.type + "-" + token.nPlayer.toString() + "-" + token.seed.toString();
+    const key = getTokenId(token);
     if (!listenerPack.hasOwnProperty(key)) {
         return null;
     }
@@ -69,28 +82,30 @@ export function getWatcherState(token: Token) {
     }
 }
 
-export function broadcastDt(token: Token, data: Object) {
-    broadcast(token.type + "-" + token.nPlayer.toString() + "-" + token.seed.toString(), JSON.stringify(data));
+export function broadcastDt(token: Token, data: Object, gmOnly: boolean = false) {
+    broadcast(getTokenId(token), JSON.stringify(data), gmOnly);
 }
 
 export function addPubSubListener(token: Token, ip: string): ReadableStream {
-    const listenerId = token.type + "-" + token.nPlayer.toString() + "-" + token.seed.toString();
+    const listenerId = getTokenId(token);
     if (!listenerPack.hasOwnProperty(listenerId)) {
-        listenerPack[listenerId] = {
-            conn: {},
-            staleCount: 0,
-            state: new RuneWheel(token)
-        };
+        if (token.type == PuzzleCode.RUNE_WHEEL) {
+            listenerPack[listenerId] = {
+                conn: {},
+                staleCount: 0,
+                state: new RuneWheel(token)
+            };
+        }        
     }
 
     if (!listenerPack[listenerId].conn.hasOwnProperty(ip)) {
         listenerPack[listenerId].conn[ip] = {};
     }
 
-    const connId = Date.now();
+    const connId = crypto.randomUUID();
     const body = new ReadableStream({
         start(controller) {
-            const takenId = Object.values(listenerPack[listenerId].conn[ip]).map(c => c.playerId);
+            const takenId = Object.values(listenerPack[listenerId].conn[ip]).filter(c => !c.gm).map(c => c.playerId);
             if (takenId.length > 0) {
                 if (!takenId.includes(token.playerId)) {
                     if (!token.gm) {
@@ -104,16 +119,23 @@ export function addPubSubListener(token: Token, ip: string): ReadableStream {
 
             listenerPack[listenerId].conn[ip][connId] = {
                 controller: controller,
-                playerId: token.playerId
+                playerId: token.playerId,
+                gm: token.gm
             };
+
+            if (token.gm) {
+                controller.enqueue("data:" + JSON.stringify({
+                    flag: "GM-MODE",
+                    id: connId
+                }) + "\n\n")
+            }
 
             if (token.type == PuzzleCode.RUNE_WHEEL) {
                 const state = listenerPack[listenerId].state as RuneWheel;
                 controller.enqueue("data:" + JSON.stringify({
                     flag: "STATE",
                     data: state.getState(token.playerId ?? 0)
-                }) + "\n\n")
-                
+                }) + "\n\n");                
             }
         },
         cancel() {

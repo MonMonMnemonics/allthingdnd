@@ -35,6 +35,6 @@ export function decodeToken(encodedToken: string): Token | null {
         nPlayer: Number(splitToken[1]),
         seed: Number(splitToken[2]),
         gm: (splitToken[3] == "1"),
-        playerId: splitToken.length > 3 ? Number(splitToken[4]) : undefined
+        playerId: splitToken.length > 4 ? Number(splitToken[4]) : undefined
     });
 }

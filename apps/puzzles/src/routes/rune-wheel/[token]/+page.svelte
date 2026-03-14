@@ -5,12 +5,18 @@
     import { page } from "$app/state";
     import "./animation.css"
 	import RejectedScreen from "$lib/components/RejectedScreen.svelte";
+	import swal from 'sweetalert2';
+	import InstructionModal from "$lib/components/InstructionModal.svelte";
 
     let innerIdxShift = $state(0);
     let outerIdxShift = $state(0);
     let progress = $state(0);
     let colFilterCss: {[index:string]: string} = $state({});
     let loading = $state(true);
+    let gmMode = $state(false);
+    let hintPanel = $state(false);
+    let playerId = $state(-1);
+    let gmId = $state("");
 
     let outerCanvas: HTMLCanvasElement;
     let innerCanvas: HTMLCanvasElement;
@@ -71,28 +77,7 @@
                     }
 
                     case "STATE": {
-                        innerIdxShift = data.data.innerShift;
-                        outerIdxShift = data.data.outerShift;
-                        progress = data.data.progress;
-
-                        let colList: string[] = [];
-                        colList.push(data.data.colour);
-                        data.data.outerWheel.forEach((e: any) => colList.push(e.colour));
-                        data.data.markers.forEach((e: any) => colList.push(e.colour));
-                        colList = [...new Set(colList)];
-
-                        colFilterCss = Object.fromEntries(colList.map(col => [col, generateCSS(col)]));
-
-                        puzzleData = {
-                            inner: data.data.innerWheel,
-                            outer: data.data.outerWheel,
-                            pad: data.data.pad,
-                            markers: data.data.markers,
-                            wheelN: data.data.innerWheel.length,
-                            mainCol: data.data.colour
-                        };
-
-                        initiatePuzzle();
+                        initiatePuzzle(data.data);
                         break;
                     }
 
@@ -100,6 +85,21 @@
                         loading = false;
                         rejected = true;
                         esListener?.close();
+                        break;
+                    }
+
+                    case "GM-MODE": {
+                        playerId = 0;
+                        gmId = data.id;
+                        gmMode = true;
+                        hintPanel = true;
+                        break;
+                    }
+
+                    case "GM-INIT": {
+                        if (data.data.id === gmId) {
+                            initiatePuzzle(data.data);
+                        }
                         break;
                     }
                 }
@@ -120,7 +120,28 @@
         };
     })
 
-    async function initiatePuzzle() {
+    async function initiatePuzzle(data: any) {
+        innerIdxShift = data.innerShift;
+        outerIdxShift = data.outerShift;
+        progress = data.progress;
+
+        let colList: string[] = [];
+        colList.push(data.colour);
+        data.outerWheel.forEach((e: any) => colList.push(e.colour));
+        data.markers.forEach((e: any) => colList.push(e.colour));
+        colList = [...new Set(colList)];
+
+        colFilterCss = Object.fromEntries(colList.map(col => [col, generateCSS(col)]));
+
+        puzzleData = {
+            inner: data.innerWheel,
+            outer: data.outerWheel,
+            pad: data.pad,
+            markers: data.markers,
+            wheelN: data.innerWheel.length,
+            mainCol: data.colour
+        };
+
         //-------------- DRAW TO CANVAS --------------
         const imgIdxs = [...new Set([...puzzleData.inner, ...puzzleData.outer.map(e => e.icoIdx)])];
         let imgElements: HTMLImageElement[] = []
@@ -298,10 +319,42 @@ async function padClick(padIdx: number) {
         body: JSON.stringify({
             icoIdx: puzzleData.pad[padIdx].icoIdx,
             innerShift: puzzleData.pad[padIdx].innerShift,
-            outerShift: puzzleData.pad[padIdx].outerShift
+            outerShift: puzzleData.pad[padIdx].outerShift,
+            playerId: playerId
         }),
         headers: {
             "Content-Type": "application/json"
+        }
+    })
+}
+
+async function switchPlayerTerminal() {
+    await fetch("/rune-wheel/" + page.params.token, {
+        method: "POST",
+        body: JSON.stringify({
+            id: gmId,
+            playerId: playerId,
+        }),
+        headers: {
+            "Content-Type": "application/json"
+        }
+    });
+}
+
+function resetPuzzle() {
+    swal.fire({
+        title: "Reset Puzzle?",
+        icon: "warning",
+        theme: "dark",
+        showCancelButton: true,
+        confirmButtonColor: "red",
+        confirmButtonText: "Reset Puzzle",
+        reverseButtons: true
+    }).then(async(res) => {
+        if (res.isConfirmed) {
+            await fetch("/rune-wheel/" + page.params.token, {
+                method: "DELETE",
+            });
         }
     })
 }
@@ -311,96 +364,119 @@ async function padClick(padIdx: number) {
 {#if loading}
 <LoadingScreen/>
 {/if}
+{#if hintPanel}
+<InstructionModal closeModal={() => hintPanel = false}
+    dcDescriptions={["0-5: ANUNUNUN", "6-10: WKWKWKWK", "11-15: AJKLSAD", ">16: MKNKAJSDHL"]}
+    puzzleDescription={"N< asdf asdfha sfasdjncfasdkjfaslkdjfb asdjhfals fasldjkb fasdbasjld afsljkfbals asdhb fasd"}
+    howToPlay={["asdfkarjasdf sdafasd fasdfaw", "asdf asdf asdklf anwb asd", "a sdfa slkfjhawelkurgasd asdhv asf ", "asd askljdf akslf weuiacasd bfsd"]}
+/>
+{/if}
 <div class="w-screen h-screen home overflow-x-hidden overflow-y-auto relative">
     <canvas 
         class="hidden" 
         bind:this={interimCanvas}
     ></canvas>
-    <div class="absolute w-screen h-screen p-5 overflow-x-hidden overflow-y-hidden flex flex-row gap-2 p-7 top-0 left-0">
-        <div class="grow flex flex-col relative">
-            <div class="my-auto flex flex-col gap-2 p-7 z-10">
-                <div class="mx-auto grid grid-flow-row grid-cols-5 w-[60%]">
-                    {#each puzzleData.markers as dt, idx}
-                        <div class="border border-1 aspect-square flex flex-col relative pointer-events-none h-[100%]">
-                            {#if dt.icoIdx >= 0}
-                                <div class="my-auto flex flex-row w-full">
-                                    <img src={"/src/lib/assets/icons/" + (dt.icoIdx) + ".png"} class="mx-auto aspect-square w-[80%] inverted z-1" 
-                                        class:animation-heartbeat2={idx < progress}
-                                        draggable="false" alt=""
-                                        style:filter={colFilterCss[dt.colour]}
+    <div class="absolute w-screen h-screen p-5 overflow-x-hidden overflow-y-hidden flex flex-col gap-2 top-0 left-0">
+        {#if gmMode}
+            <div class="flex flex-row items-center gap-2">
+                <select
+                    bind:value={playerId}
+                    onchange={() => switchPlayerTerminal()}
+                >
+                    {#each { length: Object.keys(colFilterCss).length }, idx}
+                        <option class="text-white bg-default" value={idx}>Player {idx + 1} Screen</option>
+                    {/each}
+                </select>
+                <button class="border rounded-xl p-2 font-bold cursor-pointer hover:bg-white hover:text-black" onclick={() => hintPanel = true}>Hint and Narration</button>
+                <button class="border rounded-xl p-2 font-bold cursor-pointer hover:bg-red-500 hover:text-white" onclick={() => resetPuzzle()}>Reset Puzzle</button>
+            </div>
+        {/if}
+        <div class="grow flex flex-row gap-2">
+            <div class="grow flex flex-col relative">
+                <div class="my-auto flex flex-col gap-2 p-7 z-10">
+                    <div class="mx-auto grid grid-flow-row grid-cols-5 w-[{puzzleData.markers.length > 5 ? "60%" : "70%"}]">
+                        {#each puzzleData.markers as dt, idx}
+                            <div class="border border-1 aspect-square flex flex-col relative pointer-events-none h-[100%]">
+                                {#if dt.icoIdx >= 0}
+                                    <div class="my-auto flex flex-row w-full">
+                                        <img src={"/src/lib/assets/icons/" + (dt.icoIdx) + ".png"} class="mx-auto aspect-square w-[80%] inverted z-1" 
+                                            class:animation-heartbeat2={idx < progress}
+                                            draggable="false" alt=""
+                                            style:filter={colFilterCss[dt.colour]}
+                                        />
+                                    </div>
+                                    <img src={"/src/lib/assets/icons/" + (dt.icoIdx) + ".png"} 
+                                        class="mx-auto aspect-square w-[80%] inverted absolute top-1/2 left-1/2 -translate-1/2" 
+                                        draggable="false" alt="" class:animation-heartbeat={idx < progress}
+                                        class:hidden={idx >= progress}
+                                        style:filter={colFilterCss[dt.colour] + " blur(4px)"}
                                     />
-                                </div>
-                                <img src={"/src/lib/assets/icons/" + (dt.icoIdx) + ".png"} 
-                                    class="mx-auto aspect-square w-[80%] inverted absolute top-1/2 left-1/2 -translate-1/2" 
-                                    draggable="false" alt="" class:animation-heartbeat={idx < progress}
-                                    class:hidden={idx >= progress}
-                                    style:filter={colFilterCss[dt.colour] + " blur(4px)"}
-                                />
-                            {:else}
-                                <div class="my-auto flex aspect-square w-[80%] flex-row w-full"></div>
-                            {/if}
-                        </div>
-                    {/each}
-                </div>
-                <div class="mx-auto grid grid-flow-row grid-cols-5 w-[60%]">
-                    {#each puzzleData.pad as pad, padIdx}
-                        <button class="border border-1 aspect-square h-[100%] flex flex-col relative cursor-pointer z-2 overflow-visible"
-                            onclick={(ev) =>  {
-                                padClick(padIdx);
-
-                                const rippleImg = document.createElement("img");
-                                rippleImg.className = "absolute aspect-square w-[80%] top-1/2 left-1/2 -translate-1/2 inverted pointer-events-none";
-                                rippleImg.src = "/src/lib/assets/icons/" + (pad.icoIdx) + ".png";
-                                rippleImg.onload = (e) => {
-                                    const target = e.currentTarget as HTMLImageElement;
-                                    target.classList.add("animation-ripple")
-                                }
-                                rippleImg.onanimationend = () => {
-                                    rippleImg.remove();
-                                }
-
-                                ev.currentTarget.appendChild(rippleImg);
-                            }}
-                        >
-                            <div class="my-auto flex flex-row w-full">
-                                <img src={"/src/lib/assets/icons/" + (pad.icoIdx) + ".png"} class="mx-auto aspect-square w-[80%] inverted" draggable="false" alt=""/>
+                                {:else}
+                                    <div class="my-auto flex aspect-square w-[80%] flex-row w-full"></div>
+                                {/if}
                             </div>
-                        </button>
-                    {/each}
+                        {/each}
+                    </div>
+                    <div class="mx-auto grid grid-flow-row grid-cols-5 w-[{puzzleData.markers.length > 5 ? "60%" : "70%"}]">
+                        {#each puzzleData.pad as pad, padIdx}
+                            <button class="border border-1 aspect-square h-[100%] flex flex-col relative cursor-pointer z-2 overflow-visible"
+                                onclick={(ev) =>  {
+                                    padClick(padIdx);
+
+                                    const rippleImg = document.createElement("img");
+                                    rippleImg.className = "absolute aspect-square w-[80%] top-1/2 left-1/2 -translate-1/2 inverted pointer-events-none";
+                                    rippleImg.src = "/src/lib/assets/icons/" + (pad.icoIdx) + ".png";
+                                    rippleImg.onload = (e) => {
+                                        const target = e.currentTarget as HTMLImageElement;
+                                        target.classList.add("animation-ripple")
+                                    }
+                                    rippleImg.onanimationend = () => {
+                                        rippleImg.remove();
+                                    }
+
+                                    ev.currentTarget.appendChild(rippleImg);
+                                }}
+                            >
+                                <div class="my-auto flex flex-row w-full">
+                                    <img src={"/src/lib/assets/icons/" + (pad.icoIdx) + ".png"} class="mx-auto aspect-square w-[80%] inverted" draggable="false" alt=""/>
+                                </div>
+                            </button>
+                        {/each}
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="h-full aspect-square relative z-11" 
-            bind:this={wheelDiv}
-            onanimationend={(ev) => {
-                if (puzzleData.markers.length > progress) {
-                    for (const className of ev.currentTarget.classList) {
-                        if (className.indexOf("animation-") == 0) {                            
-                            ev.currentTarget.classList.remove(className);
+            <div class="h-full aspect-square relative z-11" 
+                bind:this={wheelDiv}
+                onanimationend={(ev) => {
+                    if (puzzleData.markers.length > progress) {
+                        for (const className of ev.currentTarget.classList) {
+                            if (className.indexOf("animation-") == 0) {                            
+                                ev.currentTarget.classList.remove(className);
+                            }
                         }
+                    } else if (puzzleData.markers.length > 0) {
+                        finalCard = true;
                     }
-                } else if (puzzleData.markers.length > 0) {
-                    finalCard = true;
-                }
-            }}
-        >
-            <div class="h-3/5 aspect-square absolute top-1/2 left-1/2 relative z-11" style="translate: -50% -50%;">
-                <div bind:this={centerWheelDiv} class="h-1/5 rounded-full border-2 border aspect-square absolute top-1/2 left-1/2 relative z-12" 
-                    style="translate: -50% -50%; border-color: {puzzleData.mainCol}; background: {puzzleData.mainCol}">
+                }}
+            >
+                <div class="h-3/5 aspect-square absolute top-1/2 left-1/2 relative z-11" style="translate: -50% -50%;">
+                    <div bind:this={centerWheelDiv} class="h-1/5 rounded-full border-2 border aspect-square absolute top-1/2 left-1/2 relative z-12" 
+                        style="translate: -50% -50%; border-color: {puzzleData.mainCol}; background: {puzzleData.mainCol}">
+                    </div>
+                    <canvas 
+                        class="h-full w-full absolute top-1/2 left-1/2 transition-all duration-2000" 
+                        style="translate: -50% -50%;" 
+                        style:rotate="{-1*innerIdxShift/puzzleData.wheelN}turn"
+                        bind:this={innerCanvas}
+                    ></canvas>
                 </div>
                 <canvas 
                     class="h-full w-full absolute top-1/2 left-1/2 transition-all duration-2000" 
-                    style="translate: -50% -50%;" 
-                    style:rotate="{-1*innerIdxShift/puzzleData.wheelN}turn"
-                    bind:this={innerCanvas}
+                    style="translate: -50% -50%;"
+                    style:rotate="{-1*outerIdxShift/puzzleData.wheelN}turn"
+                    bind:this={outerCanvas}                
                 ></canvas>
             </div>
-            <canvas 
-                class="h-full w-full absolute top-1/2 left-1/2 transition-all duration-2000" 
-                style="translate: -50% -50%;"
-                style:rotate="{-1*outerIdxShift/puzzleData.wheelN}turn"
-                bind:this={outerCanvas}                
-            ></canvas>
         </div>
     </div>
     {#if finalCard}

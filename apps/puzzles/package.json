@@ -39,6 +39,7 @@
 	"dependencies": {
 		"@lucide/svelte": "^0.577.0",
 		"@types/jsonwebtoken": "^9.0.10",
-		"better-sqlite3": "^12.6.2"
+		"better-sqlite3": "^12.6.2",
+		"sweetalert2": "^11.26.22"
 	}
 }
