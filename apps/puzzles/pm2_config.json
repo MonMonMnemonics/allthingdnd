@@ -1,7 +1,11 @@
 {
   "apps" : [{
     "name" : "DNDPuzzles",
-    "script": "set PORT=3003 && set HOST='localhost' && bun build/index.js",
-    "exec_interpreter": "none"
+    "script": "bun build/index.js",
+    "exec_interpreter": "none",
+    "env": {
+        "PORT": 3003,
+        "HOST": "localhost"
+      }
   }]
 }
