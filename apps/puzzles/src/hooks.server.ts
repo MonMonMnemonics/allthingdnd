@@ -9,7 +9,7 @@ export async function handle({ event, resolve }) {
         }
     });
 
-    response.headers.set('Access-Control-Allow-Origin', (import.meta.env.MODE == "production") ? '*' /*"*.3mworkshop.org"*/ : '*'); 
+    response.headers.set('Access-Control-Allow-Origin', (import.meta.env.MODE == "production") ? "*.3mworkshop.org" : '*'); 
     response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
     response.headers.set('Access-Control-Allow-Headers', '*');
 
@@ -17,7 +17,7 @@ export async function handle({ event, resolve }) {
         return new Response(null, {
         status: 204,
         headers: {
-            'Access-Control-Allow-Origin': (import.meta.env.MODE == "production") ? '*' /*"*.3mworkshop.org"*/ : '*',
+            'Access-Control-Allow-Origin': (import.meta.env.MODE == "production") ? "*.3mworkshop.org" : '*',
             'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
             'Access-Control-Allow-Headers': '*',
         }
