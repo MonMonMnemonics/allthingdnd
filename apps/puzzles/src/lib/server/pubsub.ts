@@ -28,7 +28,7 @@ type Watcher = {
 
 let listenerPack: {[index: string]: Watcher} = {};
 
-let pingerId: NodeJS.Timeout | undefined;
+export let pingerId: NodeJS.Timeout | undefined;
 function broadcast(key: string, data: string, gmOnly: boolean = false){
     if (listenerPack.hasOwnProperty(key)) {
         if (gmOnly) {
@@ -67,6 +67,32 @@ if (!pingerId) {
             }            
         }
     }, 10*1000);
+}
+
+export async function gracefulShutdown() {
+    if (pingerId) {
+        clearInterval(pingerId);
+    }
+    console.log("CLEARED PINGER");
+
+    for (const key in listenerPack) {
+        for (const ip in listenerPack[key].conn) {
+            for (const connId in listenerPack[key].conn[ip]) {
+                try {
+                    listenerPack[key].conn[ip][connId].controller.close();
+                } catch (error) {
+                    console.log(error);
+                }
+
+                delete listenerPack[key].conn[ip][connId];
+            }
+
+            delete listenerPack[key].conn[ip];
+        }
+        delete listenerPack[key];
+    }
+    
+    console.log("CLOSED ALL ACTIVE CONNECTIONS")
 }
 
 export function getWatcherState(token: Token) {
@@ -138,6 +164,7 @@ export function addPubSubListener(token: Token, ip: string): ReadableStream {
                 }) + "\n\n");                
             }
         },
+
         cancel() {
             delete listenerPack[listenerId].conn[ip][connId];
         },

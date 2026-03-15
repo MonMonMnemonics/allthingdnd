@@ -8,7 +8,6 @@
 	import swal from 'sweetalert2';
 	import InstructionModal from "$lib/components/InstructionModal.svelte";
 	import SpectatorToggle from "$lib/components/SpectatorToggle.svelte";
-	import { Ratio } from "@lucide/svelte";
 
     let innerIdxShift = $state(0);
     let outerIdxShift = $state(0);
@@ -151,7 +150,7 @@
         let imgElements: HTMLImageElement[] = []
         
         const imgLoadPromises = imgIdxs.map(idx => {
-            const src = "/src/lib/assets/icons/" + idx + ".png";
+            const src = "/icons/" + idx + ".png";
 
             return new Promise((resolve, reject) => {
                 const img = new Image();
@@ -424,13 +423,13 @@ function resetPuzzle() {
                             >
                                 {#if dt.icoIdx >= 0}
                                     <div class="my-auto flex flex-row w-full">
-                                        <img src={"/src/lib/assets/icons/" + (dt.icoIdx) + ".png"} class="mx-auto aspect-square w-[80%] inverted z-1" 
+                                        <img src={"/icons/" + (dt.icoIdx) + ".png"} class="mx-auto aspect-square w-[80%] inverted z-1" 
                                             class:animation-heartbeat2={idx < progress}
                                             draggable="false" alt=""
                                             style:filter={colFilterCss[dt.colour]}
                                         />
                                     </div>
-                                    <img src={"/src/lib/assets/icons/" + (dt.icoIdx) + ".png"} 
+                                    <img src={"/icons/" + (dt.icoIdx) + ".png"} 
                                         class="mx-auto aspect-square w-[80%] inverted absolute top-1/2 left-1/2 -translate-1/2" 
                                         draggable="false" alt="" class:animation-heartbeat={idx < progress}
                                         class:hidden={idx >= progress}
@@ -449,7 +448,7 @@ function resetPuzzle() {
 
                                     const rippleImg = document.createElement("img");
                                     rippleImg.className = "absolute aspect-square w-[80%] top-1/2 left-1/2 -translate-1/2 inverted pointer-events-none";
-                                    rippleImg.src = "/src/lib/assets/icons/" + (pad.icoIdx) + ".png";
+                                    rippleImg.src = "/icons/" + (pad.icoIdx) + ".png";
                                     rippleImg.onload = (e) => {
                                         const target = e.currentTarget as HTMLImageElement;
                                         target.classList.add("animation-ripple")
@@ -462,7 +461,7 @@ function resetPuzzle() {
                                 }}
                             >
                                 <div class="my-auto flex flex-row w-full">
-                                    <img src={"/src/lib/assets/icons/" + (pad.icoIdx) + ".png"} class="mx-auto aspect-square w-[80%] inverted" draggable="false" alt=""/>
+                                    <img src={"/icons/" + (pad.icoIdx) + ".png"} class="mx-auto aspect-square w-[80%] inverted" draggable="false" alt=""/>
                                 </div>
                             </button>
                         {/each}
