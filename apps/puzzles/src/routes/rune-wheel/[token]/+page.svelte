@@ -7,6 +7,7 @@
 	import RejectedScreen from "$lib/components/RejectedScreen.svelte";
 	import swal from 'sweetalert2';
 	import InstructionModal from "$lib/components/InstructionModal.svelte";
+	import SpectatorToggle from "$lib/components/SpectatorToggle.svelte";
 
     let innerIdxShift = $state(0);
     let outerIdxShift = $state(0);
@@ -17,6 +18,7 @@
     let hintPanel = $state(false);
     let playerId = $state(-1);
     let gmId = $state("");
+    let spectateMode = $state(false);
 
     let outerCanvas: HTMLCanvasElement;
     let innerCanvas: HTMLCanvasElement;
@@ -93,6 +95,7 @@
                         gmId = data.id;
                         gmMode = true;
                         hintPanel = true;
+                        spectateMode = true;
                         break;
                     }
 
@@ -314,6 +317,10 @@
     }
 
 async function padClick(padIdx: number) {
+    if (spectateMode) {
+        return;
+    }
+
     await fetch("/rune-wheel/" + page.params.token + "/listener", {
         method: "POST",
         body: JSON.stringify({
@@ -389,6 +396,7 @@ function resetPuzzle() {
                 </select>
                 <button class="border rounded-xl p-2 font-bold cursor-pointer hover:bg-white hover:text-black" onclick={() => hintPanel = true}>Hint and Narration</button>
                 <button class="border rounded-xl p-2 font-bold cursor-pointer hover:bg-red-500 hover:text-white" onclick={() => resetPuzzle()}>Reset Puzzle</button>
+                <SpectatorToggle checked={spectateMode} setChecked={(checked) => spectateMode = checked}/>
             </div>
         {/if}
         <div class="grow flex flex-row gap-2">
@@ -419,7 +427,7 @@ function resetPuzzle() {
                     </div>
                     <div class="mx-auto grid grid-flow-row grid-cols-5 w-[{puzzleData.markers.length > 5 ? "60%" : "70%"}]">
                         {#each puzzleData.pad as pad, padIdx}
-                            <button class="border border-1 aspect-square h-[100%] flex flex-col relative cursor-pointer z-2 overflow-visible"
+                            <button class="border border-1 aspect-square h-[100%] flex flex-col relative z-2 overflow-visible"
                                 onclick={(ev) =>  {
                                     padClick(padIdx);
 
