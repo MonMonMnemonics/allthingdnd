@@ -11,7 +11,7 @@
 <div class="h-screen w-screen fixed top-0 left-0 overflow-hidden z-998 flex flex-col">
     <div class="absolute h-full w-full top-0 left-0 bg-black opacity-50" onclick={() => closeModal()} onkeydown={() => {}}  role="button" tabindex={100}></div>
     <div class="flex flex-row my-auto w-full z-999">
-        <div class="flex flex-col mx-auto p-5 border-3 rounded-xl bg-default items-center max-w-[40%] gap-7">
+        <div class="flex flex-col mx-auto p-5 border-3 rounded-xl bg-default items-center max-w-[60%] gap-7">
             <div class="flex flex-row gap-4 w-full">
                 <div class="flex flex-col gap-2 w-full">
                     <div class="text-center font-bold text-xl">Puzzle Lore</div>

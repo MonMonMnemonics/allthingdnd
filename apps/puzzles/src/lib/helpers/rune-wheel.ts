@@ -40,10 +40,10 @@ export class RuneWheel implements PuzzleState {
 
         //------------- LOCK MARKER GENERATION -------------
         let nTotMarker = 5;
-        if (token.nPlayer > 3 ) {
-            nTotMarker = 10;
-        } else if (token.nPlayer > 5) {
+        if (token.nPlayer > 5 ) {
             nTotMarker = 15;
+        } else if (token.nPlayer > 3) {
+            nTotMarker = 10;
         }
 
         let nMarkerMinPerPlayer = Math.floor(nTotMarker/token.nPlayer);

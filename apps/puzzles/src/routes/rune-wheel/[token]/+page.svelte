@@ -8,6 +8,7 @@
 	import swal from 'sweetalert2';
 	import InstructionModal from "$lib/components/InstructionModal.svelte";
 	import SpectatorToggle from "$lib/components/SpectatorToggle.svelte";
+	import { Ratio } from "@lucide/svelte";
 
     let innerIdxShift = $state(0);
     let outerIdxShift = $state(0);
@@ -373,9 +374,21 @@ function resetPuzzle() {
 {/if}
 {#if hintPanel}
 <InstructionModal closeModal={() => hintPanel = false}
-    dcDescriptions={["0-5: ANUNUNUN", "6-10: WKWKWKWK", "11-15: AJKLSAD", ">16: MKNKAJSDHL"]}
-    puzzleDescription={"N< asdf asdfha sfasdjncfasdkjfaslkdjfb asdjhfals fasldjkb fasdbasjld afsljkfbals asdhb fasd"}
-    howToPlay={["asdfkarjasdf sdafasd fasdfaw", "asdf asdf asdklf anwb asd", "a sdfa slkfjhawelkurgasd asdhv asf ", "asd askljdf akslf weuiacasd bfsd"]}
+    dcDescriptions={[
+        "0: You can feel the relief across the engravings, but they are completely immovable. But the pads on the bottom left potrude out as you feel like you can push them like a button.", 
+        "11: You notice that each sides has unique colour code, the symbols on wheels and the pads are also different on each sides. The only consistent part is the symbols lined up on top left albeit some of them seem to be missing depending on which side you look at.", 
+    ]}
+    puzzleDescription={`
+        The legendary ingenous locksmith master Agni Mudrankanam rumoured to be as talented in arcane technique as he was talented in smithing from his dwarven ancestry. 
+        The object in question is always found as a cube of various sizes but with a single same feature of the rune engravings in circular and square motifs on its side.
+        The rest of the cube's surface is pitch black and smooth with not even the slightest opening for even along its ridges.
+    `}
+    howToPlay={[
+        "Top left indicate the lock sequence to be read from left to right and top to bottom.", 
+        "Match the symbol with the inner circle symbol of the side with the same colour code.", 
+        "The match on the outer circle will be the key symbol to be pressed on the pad from the corresponding side with the same colour code.", 
+        "Repeat through all symbols"
+    ]}
 />
 {/if}
 <div class="w-screen h-screen home overflow-x-hidden overflow-y-auto relative">
@@ -399,12 +412,16 @@ function resetPuzzle() {
                 <SpectatorToggle checked={spectateMode} setChecked={(checked) => spectateMode = checked}/>
             </div>
         {/if}
-        <div class="grow flex flex-row gap-2">
-            <div class="grow flex flex-col relative">
-                <div class="my-auto flex flex-col gap-2 p-7 z-10">
-                    <div class="mx-auto grid grid-flow-row grid-cols-5 w-[{puzzleData.markers.length > 5 ? "60%" : "70%"}]">
+        <div class="h-full flex flex-row gap-2 relative">
+            <div class="flex flex-row relative w-full">
+                <div class="mx-auto flex flex-col relative">
+                    <div class="my-auto grid grid-flow-row grid-cols-5"
+                        style:height="90vh" style:aspect-ratio="5/{Math.floor(Math.sqrt(puzzleData.pad.length) + puzzleData.markers.length/5)}"
+                    >
                         {#each puzzleData.markers as dt, idx}
-                            <div class="border border-1 aspect-square flex flex-col relative pointer-events-none h-[100%]">
+                            <div class="border border-1 aspect-square flex flex-col relative pointer-events-none"
+                                style:width="100%"
+                            >
                                 {#if dt.icoIdx >= 0}
                                     <div class="my-auto flex flex-row w-full">
                                         <img src={"/src/lib/assets/icons/" + (dt.icoIdx) + ".png"} class="mx-auto aspect-square w-[80%] inverted z-1" 
@@ -424,10 +441,9 @@ function resetPuzzle() {
                                 {/if}
                             </div>
                         {/each}
-                    </div>
-                    <div class="mx-auto grid grid-flow-row grid-cols-5 w-[{puzzleData.markers.length > 5 ? "60%" : "70%"}]">
                         {#each puzzleData.pad as pad, padIdx}
-                            <button class="border border-1 aspect-square h-[100%] flex flex-col relative z-2 overflow-visible"
+                            <button class="border border-1 aspect-square flex flex-col relative z-2 overflow-visible"
+                                style:width="100%"
                                 onclick={(ev) =>  {
                                     padClick(padIdx);
 
