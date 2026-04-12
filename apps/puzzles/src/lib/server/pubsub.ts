@@ -132,11 +132,6 @@ export function addPubSubListener(token: Token, ip: string): ReadableStream {
     const body = new ReadableStream({
         start(controller) {
             const takenId = Object.values(listenerPack[listenerId].conn[ip]).filter(c => !c.gm).map(c => c.playerId);
-            console.log({
-                ip: ip,
-                id: token.playerId,
-                takenId: takenId
-            });
 
             if (takenId.length > 0) {
                 if (!takenId.includes(token.playerId)) {
