@@ -61,9 +61,12 @@ if (!pingerId) {
             }
 
             if (Object.keys(listenerPack[key].conn).length > 0) {
+                listenerPack[key].staleCount = 0;
                 broadcast(key, "{}");
-            } else {
+            } else if (listenerPack[key].staleCount >= 3) {
                 delete listenerPack[key];
+            } else {
+                listenerPack[key].staleCount + 1;
             }            
         }
     }, 10*1000);
