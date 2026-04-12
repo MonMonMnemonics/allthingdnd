@@ -1,7 +1,7 @@
 <script lang="ts">
 	import LoadingScreen from "$lib/components/LoadingScreen.svelte";
 	import { generateCSS, hexToRgb } from "$lib/helpers/colFilterGenerator";
-	import { onDestroy, onMount } from "svelte";
+	import { onMount } from "svelte";
     import { page } from "$app/state";
     import "./animation.css"
 	import RejectedScreen from "$lib/components/RejectedScreen.svelte";
@@ -119,14 +119,8 @@
         return () => {
             if (esListener) {
                 esListener.close();
-            }
+            }            
         };
-    })
-
-    onDestroy(() => {
-        if (esListener) {
-            esListener.close();
-        }
     })
 
     async function initiatePuzzle(data: any) {
@@ -381,7 +375,7 @@ function resetPuzzle() {
 <InstructionModal closeModal={() => hintPanel = false}
     dcDescriptions={[
         "0: You can feel the relief across the engravings, but they are completely immovable. But the pads on the bottom left potrude out as you feel like you can push them like a button.", 
-        "11: You notice that each sides has unique colour code, the symbols on wheels and the pads are also different on each sides. The only consistent part is the symbols lined up on top left albeit some of them seem to be missing depending on which side you look at.", 
+        "11: You notice that each side has unique colour code, the symbols on wheels and the pads are also different on each side. The only consistent part is the symbols lined up on top left albeit some of them seem to be missing depending on which side you look at.", 
     ]}
     puzzleDescription={`
         The legendary ingenous locksmith master Agni Mudrankanam rumoured to be as talented in arcane technique as he was talented in smithing from his dwarven ancestry. 

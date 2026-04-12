@@ -12,8 +12,15 @@ export async function GET(req) {
         const token = decodeToken(encodedToken);
 
         if (token) {
-            const body = addPubSubListener(token, ipAddr);
-            return new Response(body, { headers: pubSubHeader });
+            const pubSubEntity = addPubSubListener(token, ipAddr);
+
+            function closeUp() {
+                pubSubEntity.closePubSubEntity();
+                req.request.signal.removeEventListener('abort', closeUp);
+            }            
+            req.request.signal.addEventListener('abort', closeUp);
+
+            return new Response(pubSubEntity.body, { headers: pubSubHeader });
         }      
 
         return text("INVALID TOKEN", { status: 400 })

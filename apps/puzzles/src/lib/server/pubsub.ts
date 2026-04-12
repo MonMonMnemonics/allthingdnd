@@ -112,7 +112,10 @@ export function broadcastDt(token: Token, data: Object, gmOnly: boolean = false)
     broadcast(getTokenId(token), JSON.stringify(data), gmOnly);
 }
 
-export function addPubSubListener(token: Token, ip: string): ReadableStream {
+export function addPubSubListener(token: Token, ip: string): {
+    body: ReadableStream,
+    closePubSubEntity: () => void
+} {
     const listenerId = getTokenId(token);
     if (!listenerPack.hasOwnProperty(listenerId)) {
         if (token.type == PuzzleCode.RUNE_WHEEL) {
@@ -132,11 +135,6 @@ export function addPubSubListener(token: Token, ip: string): ReadableStream {
     const body = new ReadableStream({
         start(controller) {
             const takenId = Object.values(listenerPack[listenerId].conn[ip]).filter(c => !c.gm).map(c => c.playerId);
-            console.log({
-                ip: ip,
-                playerId: token.playerId,
-                takenId: takenId
-            });
 
             if (takenId.length > 0) {
                 if (!takenId.includes(token.playerId)) {
@@ -172,11 +170,29 @@ export function addPubSubListener(token: Token, ip: string): ReadableStream {
         },
 
         cancel() {
-            console.log(connId);
             delete listenerPack[listenerId].conn[ip][connId];
         },
         
     });
 
-    return (body);
+    return ({
+        body: body,
+        closePubSubEntity: () => {
+            if (!listenerPack.hasOwnProperty(listenerId)) {
+                return;
+            }
+
+            if (!listenerPack[listenerId].conn.hasOwnProperty(ip)) {
+                return;
+            }
+
+            if (!listenerPack[listenerId].conn[ip].hasOwnProperty(connId)) {
+                return;
+            }
+            
+            listenerPack[listenerId].conn[ip][connId].controller.close();
+            delete listenerPack[listenerId].conn[ip][connId];
+            return;
+        }
+    });
 }
