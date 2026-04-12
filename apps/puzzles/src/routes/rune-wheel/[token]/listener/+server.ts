@@ -5,7 +5,8 @@ import { addPubSubListener, broadcastDt, getWatcherState, pubSubHeader } from "$
 import { text } from '@sveltejs/kit';
 
 export async function GET(req) {
-    const ipAddr = req.getClientAddress();
+    console.log(req.request.headers);
+    const ipAddr = req.request.headers.get('X-Forwarded-For') ?? req.getClientAddress();
 
     try {
         const encodedToken = await decrypt(req.params.token);
