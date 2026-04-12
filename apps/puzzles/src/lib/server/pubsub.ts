@@ -131,16 +131,6 @@ export function addPubSubListener(token: Token, ip: string): ReadableStream {
     const connId = crypto.randomUUID();
     const body = new ReadableStream({
         start(controller) {
-            Object.entries(listenerPack[listenerId].conn[ip]).forEach(([id, dt]) => {
-                try {
-                    dt.controller.enqueue("data:{}\n\n");
-                } catch (e) {
-                    console.log("TEST");
-                    dt.controller.close();
-                    //delete listenerPack[listenerId].conn[ip][connId];
-                }
-            })
-
             const takenId = Object.values(listenerPack[listenerId].conn[ip]).filter(c => !c.gm).map(c => c.playerId);
             console.log({
                 ip: ip,
@@ -182,6 +172,7 @@ export function addPubSubListener(token: Token, ip: string): ReadableStream {
         },
 
         cancel() {
+            console.log(connId);
             delete listenerPack[listenerId].conn[ip][connId];
         },
         
