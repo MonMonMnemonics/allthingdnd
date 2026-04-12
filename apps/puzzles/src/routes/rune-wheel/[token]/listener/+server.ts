@@ -5,6 +5,11 @@ import { addPubSubListener, broadcastDt, getWatcherState, pubSubHeader } from "$
 import { text } from '@sveltejs/kit';
 
 export async function GET(req) {
+    console.log([
+        req.request.headers.get('X-Forwarded-For'),
+        req.request.headers.get('X-Real-IP')
+    ]);
+    
     const ipAddr = req.request.headers.get('X-Forwarded-For') ?? req.getClientAddress();
 
     try {
