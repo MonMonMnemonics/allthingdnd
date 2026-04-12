@@ -1,7 +1,7 @@
 <script lang="ts">
 	import LoadingScreen from "$lib/components/LoadingScreen.svelte";
 	import { generateCSS, hexToRgb } from "$lib/helpers/colFilterGenerator";
-	import { onMount } from "svelte";
+	import { onDestroy, onMount } from "svelte";
     import { page } from "$app/state";
     import "./animation.css"
 	import RejectedScreen from "$lib/components/RejectedScreen.svelte";
@@ -119,8 +119,14 @@
         return () => {
             if (esListener) {
                 esListener.close();
-            }            
+            }
         };
+    })
+
+    onDestroy(() => {
+        if (esListener) {
+            esListener.close();
+        }
     })
 
     async function initiatePuzzle(data: any) {

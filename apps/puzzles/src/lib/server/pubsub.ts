@@ -135,6 +135,7 @@ export function addPubSubListener(token: Token, ip: string): ReadableStream {
                 try {
                     dt.controller.enqueue("data:{}\n\n");
                 } catch (e) {
+                    console.log("TEST");
                     dt.controller.close();
                     //delete listenerPack[listenerId].conn[ip][connId];
                 }
