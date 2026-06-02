@@ -94,7 +94,7 @@ export function Poll() {
         }
 
         const data = await res.json();
-        const auxInfoCodes = (data.pollData.auxInfo ?? []).map((e : any) => e.code);
+        const auxInfoCodes = [...(data.pollData.auxInfo ?? []).map((e : any) => e.code)];
         data.pollData.auxInfoCodes = auxInfoCodes;
         data.userData = data.userData.map((dt: any) => {
             for (const code of auxInfoCodes) {
