@@ -12,8 +12,7 @@ type Props = {
     userData: UserData[];
     activeUserId: number;
     isHost: boolean;
-    dateStart: string;
-    dateEnd: string;
+    dateSlot: string[];
     auxInfoCodes: string[];
     timeslotHostLock: boolean;
     timeslotShift: number;
@@ -29,19 +28,16 @@ export const ScheduleTable: FC<Props> = memo(({
     userData,
     activeUserId,
     isHost,
-    dateStart,
-    dateEnd,
     auxInfoCodes,
     timeslotHostLock,
     timeslotShift,
+    dateSlot,
 
     login,
     switchCellColour,
     deleteUser,
     setAuxInfoModal,
 }) => {
-    const [ brushActive, setBrushActive ] = useState(false);
-    
     const [ hostClosed, setHostClosed ] = useState<string[]>([]);
     useEffect(() => {
         let newHostClosed : string[] = [];
@@ -60,38 +56,8 @@ export const ScheduleTable: FC<Props> = memo(({
 
     const [ dates, setDates ] = useState<string[]>([]);
     useEffect(() => {
-        let start = moment(dateStart);
-        let end = moment(dateEnd);
-
-        if (timeslotShift > 0) {
-            end = end.add(1, "d");
-        } else if (timeslotShift < 0) {
-            start = start.add(-1, "d");
-        }
-
-        let dateArray: string[] = [];
-        while (!start.isAfter(end)) {
-            dateArray.push(start.format("YYYY-MM-DD"));
-            start = start.add(1, "d");
-        }
-
-        setDates(dateArray);        
-    }, [dateStart, dateEnd, timeslotShift])
-
-    function mouseDown(date: string, timeslotIdx: number) {
-        setBrushActive(true);
-        switchCellColour(date, timeslotIdx);
-    }
-
-    function mouseEnter(date: string, timeslotIdx: number) {
-        if (brushActive) {
-            switchCellColour(date, timeslotIdx);
-        }
-    }
-
-    function mouseLeave() {
-        setBrushActive(false);
-    }
+        setDates(dateSlot);
+    }, [dateSlot])
 
     //-------------------------- AUX COMPONENTS --------------------------
     const TimeslotCell = (date: string, timeslotIdx: number, user: UserData) => {
@@ -150,8 +116,12 @@ export const ScheduleTable: FC<Props> = memo(({
 
         if ((activeUserId == user.id) && (!attType.includes("disabled")) && ((!hostClosed.includes(dateKey)) || (isHost) || (!timeslotHostLock))) {
             return <td 
-                key={user.id + "-" + date + "-" + timeslotIdx} className={attType} onMouseUp={mouseLeave}
-                onMouseDown={() => mouseDown(date, timeslotIdx)} onMouseEnter={() => mouseEnter(date, timeslotIdx)}
+                key={user.id + "-" + date + "-" + timeslotIdx} className={attType} 
+                onMouseDown={() => switchCellColour(date, timeslotIdx)} onMouseEnter={(ev) => {
+                    if (ev.buttons === 1) {
+                        switchCellColour(date, timeslotIdx);
+                    }
+                }}
             >
                 {
                     (attType.includes("host-unavail") && (!user.host)) ? 
@@ -165,7 +135,7 @@ export const ScheduleTable: FC<Props> = memo(({
         } else {
             return <td 
                 key={user.id + "-" + date + "-" + timeslotIdx}
-                className={attType} onMouseUp={mouseLeave}
+                className={attType}
             >
                 {
                     (attType.includes("host-unavail") && (!user.host)) ? 
@@ -200,8 +170,8 @@ export const ScheduleTable: FC<Props> = memo(({
                                     theme: "dark",
                                     confirmButtonText: "Jump",
                                     inputAttributes: {
-                                        min: dateStart,
-                                        max: dateEnd,
+                                        min: dates[0] ?? "",
+                                        max: dates[dates.length - 1] ?? "",
                                     },
                                     inputValue: date
                                 })
@@ -225,7 +195,7 @@ export const ScheduleTable: FC<Props> = memo(({
                             }}
                         >
                             <FontAwesomeIcon icon={faCalendarDays} className='mt-1'/>
-                            </p>
+                        </p>
                     </div>
                 </div>
             </th>
@@ -259,7 +229,7 @@ export const ScheduleTable: FC<Props> = memo(({
                         </thead>
                         <tbody>
                             {userData.map((user, idx) => (
-                                <tr key={'tr-' + idx} style={{ height: '5ch' }} className={(user.id == activeUserId) ? "selected-row" : ""} onMouseLeave={mouseLeave}>
+                                <tr key={'tr-' + idx} style={{ height: '5ch' }} className={(user.id == activeUserId) ? "selected-row" : ""}>
                                     <th className='sticky text-nowrap left-0 align-middle px-3 min-w-[30ch] name-cell first-col' style={{ zIndex: 1 }}>
                                         <div className='flex flex-row items-center gap-3 w-full'>
                                             <div className="me-auto">{user.name}</div>
@@ -335,7 +305,7 @@ export const ScheduleTable: FC<Props> = memo(({
                                         ))}
                                     </tr>
                                     {userData.map((user, idx) => (
-                                        <tr key={'tr-' + idx} className={(user.id == activeUserId) ? "selected-row" : ""} style={{ height: '3em' }} onMouseLeave={mouseLeave}>
+                                        <tr key={'tr-' + idx} className={(user.id == activeUserId) ? "selected-row" : ""} style={{ height: '3em' }}>
                                             <th className={'sticky text-nowrap left-0 align-middle px-3 w-[310px] left-border name-cell'
                                                 + ((idx == userData.length - 1) ? " bottom-border" : "")
                                             } style={{ zIndex: 1 }}>

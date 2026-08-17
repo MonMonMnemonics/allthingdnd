@@ -18,14 +18,13 @@ export interface SelectedUser {
 export interface PollData {
     title: string,
     description: string,
-    dateStart: string,
-    dateEnd: string,
     timezone: string,
     open: boolean,
     timeslotHostLock: boolean,
+    dates: string[],
     auxInfo: {
         id: number,
         code: string
-    }[]
+    }[],
     auxInfoCodes: string[]
 }

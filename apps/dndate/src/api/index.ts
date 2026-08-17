@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { db } from "../lib/database";
-import { poll, user, auxInfo, attendance, userInfo } from "../lib/schema";
+import { poll, user, auxInfo, attendance, userInfo, pollSlots } from "../lib/schema";
 import { and, asc, desc, eq, inArray, lt, notInArray } from "drizzle-orm";
 import moment from "moment";
 import type { UserData } from "@/common/types";
@@ -72,8 +72,6 @@ type AuthPollData = {
     id: number,
     title: string,
     description: string,
-    dateStart: string,
-    dateEnd: string,
     timezone: string,
     open: boolean
 };
@@ -91,8 +89,6 @@ const checkAuth = createMiddleware(async (ctx, next) => {
             id: poll.id,
             title: poll.title,
             description: poll.description,
-            dateStart: poll.dateStart,
-            dateEnd: poll.dateEnd,
             timezone: poll.timezone,
             open: poll.open
         })
@@ -150,12 +146,17 @@ API.post('poll/create', async (ctx) => {
 
     const todayTime = moment();
 
-    if (moment(reqData.dateStart).add(1, "d").isBefore(todayTime) || (moment(reqData.dateStart).add(-6, "M").isAfter(todayTime))) {
+    if ((reqData.dates ?? []).length == 0) {
         ctx.status(400);
         return ctx.text("NOPE")
     }
 
-    if (moment(reqData.dateEnd).add(1, "d").isBefore(todayTime) || (moment(reqData.dateEnd).add(-6, "M").isAfter(todayTime))) {
+    if (moment(reqData.dates[0][0]).add(1, "d").isBefore(todayTime) || (moment(reqData.dates[0][0]).add(-6, "M").isAfter(todayTime))) {
+        ctx.status(400);
+        return ctx.text("NOPE")
+    }
+
+    if (moment(reqData.dates[reqData.dates.length - 1][1]).add(1, "d").isBefore(todayTime) || (moment(reqData.dates[reqData.dates.length - 1][1]).add(-6, "M").isAfter(todayTime))) {
         ctx.status(400);
         return ctx.text("NOPE")
     }
@@ -164,12 +165,16 @@ API.post('poll/create', async (ctx) => {
         token: token,
         title: reqData.title,
         description: reqData.desc,
-        deletionTime: moment(reqData.dateEnd).valueOf()/1000 + 60*60*24*30,
-        dateStart: reqData.dateStart,
-        dateEnd: reqData.dateEnd,
+        deletionTime: moment(reqData.dates[reqData.dates.length - 1][1]).valueOf()/1000 + 60*60*24*30,
         timezone: reqData.timezone,
         timeslotHostLock: reqData.timeslotHostLock ?? false
     }).returning({ id: poll.id});
+
+    await db.insert(pollSlots).values(reqData.dates.map((dates: string[]) => ({
+        pollId: newPoll[0]?.id,
+        dateStart: dates[0],
+        dateEnd: dates[1]
+    })));
 
     await db.insert(user).values({
         pollId: newPoll[0]?.id,
@@ -345,12 +350,10 @@ API.post("poll/data", async (ctx) => {
         }
     }
 
-    let pollData : any = await db.select({
+    let pollData: any = await db.select({
             id: poll.id,
             title: poll.title,
             description: poll.description,
-            dateStart: poll.dateStart,
-            dateEnd: poll.dateEnd,
             timezone: poll.timezone,
             open: poll.open,
             timeslotHostLock: poll.timeslotHostLock
@@ -367,6 +370,12 @@ API.post("poll/data", async (ctx) => {
     }
 
     pollData = pollData[0];
+    pollData.dates = await db.select({
+            dateStart: pollSlots.dateStart,
+            dateEnd: pollSlots.dateEnd,
+        })
+        .from(pollSlots)
+        .where(eq(pollSlots.pollId, pollData.id))
 
     pollData.auxInfo = await db.select({
             id: auxInfo.id,
@@ -550,6 +559,7 @@ API.use("poll/delete", async (ctx, next) => checkAuth(ctx, next));
 API.post("poll/delete", async (ctx) => {
     if (ctx.get("userData").host) {
         await db.delete(poll).where(eq(poll.id, ctx.get("pollData").id));
+        await db.delete(pollSlots).where(eq(pollSlots.pollId, ctx.get("pollData").id));
         await db.delete(auxInfo).where(eq(auxInfo.id, ctx.get("pollData").id));
         
         const users = await db.select({ id: user.id }).from(user).where(eq(user.pollId, ctx.get("pollData").id));
@@ -573,6 +583,7 @@ setInterval(async () => {
     const pollToDelete = await db.select({ id: poll.id }).from(poll).where(lt(poll.deletionTime,  (new Date()).getTime()/1000));
     if (pollToDelete.length > 0) {
         await db.delete(poll).where(inArray(poll.id, pollToDelete.map(e => e.id)));
+        await db.delete(pollSlots).where(inArray(pollSlots.pollId, pollToDelete.map(e => e.id)));
         await db.delete(auxInfo).where(inArray(auxInfo.id, pollToDelete.map(e => e.id)));
         
         const users = await db.select({ id: user.id }).from(user).where(inArray(user.pollId, pollToDelete.map(e => e.id)));

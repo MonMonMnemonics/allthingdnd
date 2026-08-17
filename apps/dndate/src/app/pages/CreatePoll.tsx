@@ -3,7 +3,15 @@ import { faArrowCircleLeft, faSpinner, faWandSparkles } from "@fortawesome/free-
 import { useState } from "react";
 import moment from "moment";
 import Swal from 'sweetalert2';
+import { Calendar, DateObject } from 'react-multi-date-picker';
 import { auxInfoEnum, timezones } from "@/common/consts";
+import DatePanelRaw from "react-multi-date-picker/plugins/date_panel";
+
+function unwrapCjsDefault<T>(mod: T | { default: T }): T {
+  return (mod as any)?.default ?? mod;
+}
+
+const DatePanel = unwrapCjsDefault(DatePanelRaw);
 
 const extraOpts: {[index: string]: any} = {
     "first-timer": { text:"If first-timer player", codes: [auxInfoEnum.firstTimer]},
@@ -18,13 +26,22 @@ export function CreatePoll() {
     const [ title, setTitle ] = useState("");
     const [ desc, setDesc ] = useState("");
     const [ timeslotHostLock, setTImeslotHostLock ] = useState(false);
-    const [ dateStart, setDateStart ] = useState(moment().format('YYYY-MM-DD'));
-    const [ dateEnd, setDateEnd ] = useState(moment().add(7, "d").format('YYYY-MM-DD'));
     const [ optsInfo, setOptInfo ]  = useState<string[]>([]);
     const [ loading, setLoading] = useState(false);
     const [ timezone, setTimezone ] = useState(timezones[25]?.value)
+    const [ dates, setDates] = useState<DateObject[][]>([]);
 
     async function createPoll() {
+        if (dates.length == 0) {
+            await Swal.fire({
+                title: "Need to choose dates",
+                icon: "warning",
+                theme: "dark",
+                focusConfirm: false,
+            });
+            return;
+        }
+
         const swConf = await Swal.fire({
             title: "Create poll?",
             icon: "question",
@@ -34,7 +51,7 @@ export function CreatePoll() {
             reverseButtons: true,
             confirmButtonText: "Yes",
             cancelButtonText: "No"
-        })
+        });
         
         if (!swConf.isConfirmed) {
             return;
@@ -51,8 +68,6 @@ export function CreatePoll() {
                 pass,
                 title,
                 desc,
-                dateStart,
-                dateEnd,
                 timezone,
                 timeslotHostLock,
                 opts: optsInfo.map(key => {
@@ -61,7 +76,8 @@ export function CreatePoll() {
                     } else {
                         return([])
                     }
-                }).flat()
+                }).flat(),
+                dates: dates.map(e => e.map(e2 => e2.format("YYYY-MM-DD")))
             })
         })
 
@@ -155,66 +171,82 @@ export function CreatePoll() {
                             value={desc}
                             onChange={(e) => setDesc(e.target.value)}
                             placeholder="Description what kind of event is this (optional)"
-                            className="dark-input w-full p-2 rounded border font-light resize-none h-[10em]"
+                            className="dark-input w-full p-2 rounded border font-light resize-none h-[6em]"
                             maxLength={2000}
                         />
                     </div>
-                    <div className="flex flex-row gap-2 items-center text-xl">
-                        <div className="text-nowrap">Open date:</div>
-                        <input value={dateStart} type="date" min={moment().format('YYYY-MM-DD')} max={moment().add(6, "M").format('YYYY-MM-DD')} className="font-bold" 
-                            onChange={(e) => {
-                                if (e.target.value != "") {
-                                    setDateStart(e.target.value);
-                                    if (moment(e.target.value).isAfter(moment(dateEnd))) {
-                                        setDateEnd(e.target.value);
-                                    }
-                                }
-                            }}/>
-                        <div className="text-nowrap">-</div>
-                        <input value={dateEnd} type="date" min={dateStart} max={moment().add(6, "M").format('YYYY-MM-DD')} className="font-bold"
-                            onChange={(e) => {
-                                if (e.target.value != "") {
-                                    setDateEnd(e.target.value);
-                                }                                
-                            }}/>
-
-                        <div className="text-nowrap text-sm">(6 months in advance max)</div>
-                    </div>
-                    <div className="text-nowrap text-sm font-bold text-red-500">Poll will be automatically deleted 1 month after the last open date</div>
-                    <div className="flex flex-row gap-2 items-center w-full">
-                        <div className="text-nowrap text-xl">Timezone:</div>
-                        <select 
-                            value={timezone}
-                            onChange={(e) => setTimezone(Number(e.target.value))}
-                            className="font-bold text-xl px-2"
-                        >
-                            {timezones.map((tz, idx) => <option className="text-black" key={"opt-" + idx} value={tz.value}>{tz.label}</option>)}
-                        </select>
-                    </div>
-                    <div className="flex flex-row gap-2 items-center w-full cursor-pointer" onClick={() => setTImeslotHostLock(!timeslotHostLock)}>
-                        <input className="w-[1.1em] h-[1.1em]" type="checkbox" checked={timeslotHostLock} readOnly/>
-                        <div>Lock timeslot if host is unavailable.</div>
-                    </div>
-                    <div className="flex flex-col gap-1 w-full">
-                        <div className="text-nowrap text-xl">Add extra questions:</div>
-                        <ul className="list-none">
-                            {Object.entries(extraOpts).map(([key, opt]) => (
-                                <li className="flex flex-row gap-2 items-center cursor-pointer" key={"opts-" + key} 
-                                    onClick={() => {
-                                        const idx = optsInfo.indexOf(key);
-                                        if (idx == -1) {
-                                            setOptInfo([...optsInfo, key]);
-                                        } else {
-                                            setOptInfo(optsInfo.filter(e => (e !== key)));
-                                        }
-                                    }}
+                    <div className="flex flex-row gap-2 w-full">
+                        <div className="flex flex-col gap-3">
+                            <div className="flex flex-row gap-2 items-center text-xl">
+                                <div className="text-nowrap">Open date:</div>
+                                <div className="text-nowrap">6 months in advance max</div>
+                            </div>
+                            <div className="flex flex-row gap-2 items-center text-xl">
+                                <Calendar
+                                    multiple
+                                    range                            
+                                    minDate={new DateObject()}
+                                    maxDate={new DateObject().add(6, "months")}
+                                    value={dates}
+                                    onChange={setDates}
+                                    plugins={[
+                                        <DatePanel position="right"/>
+                                    ]}
+                                />
+                            </div>
+                            <div className="text-nowrap text-sm font-bold text-red-500">Poll will be automatically deleted 1 month after the last open date</div>
+                            <div className="flex flex-row gap-2 items-center w-full">
+                                <div className="text-nowrap text-xl">Timezone:</div>
+                                <select 
+                                    value={timezone}
+                                    onChange={(e) => setTimezone(Number(e.target.value))}
+                                    className="font-bold text-xl px-2"
                                 >
-                                    <input className="w-[1.1em] h-[1.1em]" type="checkbox" checked={optsInfo.includes(key)} readOnly/>
-                                    <div>{opt.text}</div>
-                                </li>
-                            ))}
-                        </ul>
+                                    {timezones.map((tz, idx) => <option className="text-black" key={"opt-" + idx} value={tz.value}>{tz.label}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                        <div className="flex flex-col gap-3">
+                            <div className="flex flex-col gap-1 w-full">
+                                <div className="text-nowrap text-xl">Other settings:</div>
+                                <ul className="list-none">
+                                    <li className="flex flex-row gap-2 items-center cursor-pointer"
+                                        onClick={() => setTImeslotHostLock(!timeslotHostLock)}
+                                    >
+                                        <input className="w-[1.1em] h-[1.1em]" type="checkbox" checked={timeslotHostLock} readOnly/>
+                                        <div>Lock timeslot if host is unavailable.</div>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div className="flex flex-col gap-1 w-full">
+                                <div className="text-nowrap text-xl">Add extra questions:</div>
+                                <ul className="list-none">
+                                    {Object.entries(extraOpts).map(([key, opt]) => (
+                                        <li className="flex flex-row gap-2 items-center cursor-pointer" key={"opts-" + key} 
+                                            onClick={() => {
+                                                const idx = optsInfo.indexOf(key);
+                                                if (idx == -1) {
+                                                    setOptInfo([...optsInfo, key]);
+                                                } else {
+                                                    setOptInfo(optsInfo.filter(e => (e !== key)));
+                                                }
+                                            }}
+                                        >
+                                            <input className="w-[1.1em] h-[1.1em]" type="checkbox" checked={optsInfo.includes(key)} readOnly/>
+                                            <div>{opt.text}</div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
                     </div>
+
+                    {/*
+                    
+
+                    
+                    
+                    */}
                     <button className="dark-button p-1 py-3 text-xl rounded border flex items-center justify-center gap-2 font-light flex flex-row gap-2 items-center"
                         type="submit"
                         onClick={(e) => {

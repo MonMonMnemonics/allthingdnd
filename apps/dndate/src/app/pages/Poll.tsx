@@ -4,7 +4,7 @@ import { useParams, useSearchParams } from "react-router-dom";
 import Swal from "sweetalert2";
 import type { UserData, SelectedUser, PollData } from "@/common/types";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBan, faFloppyDisk, faHouse, faInfoCircle, faLeaf, faLeftRight, faLockOpen, faMaximize, faMinimize, faPersonChalkboard, faPlus, faQuestionCircle, faSpinner, faTriangleExclamation, faUpDown, faUser, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faBan, faCalendarDays, faFloppyDisk, faHouse, faInfoCircle, faLeaf, faLeftRight, faLockOpen, faMaximize, faMinimize, faPenToSquare, faPersonChalkboard, faPlus, faQuestionCircle, faSpinner, faTriangleExclamation, faUpDown, faUser, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { auxInfoEnum, timezones } from "@/common/consts";
 import { ScheduleTable } from "../components/ScheduleTable";
 import { UserInfoModal } from "../components/UserInfoModal";
@@ -20,21 +20,24 @@ export function Poll() {
     const { token } = useParams();
     const [ searchParams ] = useSearchParams();
     const [ pollExist, setPollExist ] = useState(true);
-    const [ pollStyle, setPollStyle ] = useState("HORIZONTAL");
+    const [ pollStyle, setPollStyle ] = useState("VERTICAL");
     const [ fullView, setFullView ] = useState(false);
     const [ timezone, setTimezone ] = useState(0);
     const [ timeslotShift, setTimeslotShift ] = useState(0);
+    const [ guideModal, SetGuideModal ] = useState({
+        show: false,
+        states: Array(24).fill(0)
+    });
 
     const [ pollData, setPollData ] = useState<PollData>({
         title: "POLL",
         description: "",
-        dateStart: moment().format("YYYY-MM-DD"),
-        dateEnd: moment().format("YYYY-MM-DD"),
         timezone: "0",
         open: true,
         auxInfo: [],
         auxInfoCodes: [],
-        timeslotHostLock: false
+        timeslotHostLock: false,
+        dates: []
     });
     const [ userData, setUserData ] = useState<UserData[]>([]);
 
@@ -94,7 +97,7 @@ export function Poll() {
         }
 
         const data = await res.json();
-        const auxInfoCodes = [... new Set((data.pollData.auxInfo ?? []).map((e : any) => e.code))];
+        const auxInfoCodes = [... new Set((data.pollData.auxInfo ?? []).map((e : any) => e.code))] as string[];
         data.pollData.auxInfo = auxInfoCodes.map((e: any) => data.pollData.auxInfo.find((e2: any) => e2.code == e));
         data.pollData.auxInfoCodes = auxInfoCodes;
         data.userData = data.userData.map((dt: any) => {
@@ -106,6 +109,19 @@ export function Poll() {
 
             return dt;
         });
+        
+        data.pollData.dates = data.pollData.dates.map((e : {dateStart:string, dateEnd: string}) => {
+            const dates: string[] = [];
+            const momentStart = moment(e.dateStart);
+            const momentEnd = moment(e.dateEnd);
+    
+            while (momentStart.isSameOrBefore(momentEnd)) {
+                dates.push(momentStart.format("YYYY-MM-DD"));
+                momentStart.add(1, "day");
+            }
+            
+            return(dates);
+        }).flat(1).sort((a: string, b: string) => moment(a).diff(moment(b)));
 
         setPollData(data.pollData);
 
@@ -119,6 +135,7 @@ export function Poll() {
                         key: (window.sessionStorage.getItem("OTT-" + token) ?? ""),
                         auxInfo: usr.auxInfo
                     });
+                    SetGuideModal({ show: true, states: Array(24).fill(0).map(() => Math.floor(Math.random()*3) - 1)});
                     break;
                 }
             }
@@ -663,7 +680,7 @@ export function Poll() {
         setLoading(false);
         setBrushType(1);
 
-        const dateEl = document.getElementById("DateHeader-" + pollData.dateStart);
+        const dateEl = document.getElementById("DateHeader-" + pollData.dates[0]);
         if (dateEl) {
             if (pollStyle == "VERTICAL") {
                 dateEl.scrollIntoView({
@@ -677,6 +694,8 @@ export function Poll() {
                 })
             }                                    
         }
+
+        SetGuideModal({ show: true, states: Array(24).fill(0).map(() => Math.floor(Math.random()*3) - 1)});
     }
 
     async function submitInfoChange(data: {[index: string]: any}) {
@@ -849,6 +868,143 @@ export function Poll() {
                 </div>
             }
 
+            { //-------------------------- INFO MODAL --------------------------
+                guideModal.show && 
+                <div className="fixed h-full w-full z-10 flex flex-row">
+                    <div className="bg-black opacity-40 fixed h-full w-full z-11" onClick={() => SetGuideModal({ ...guideModal, show: false})}></div>
+                    <div className="mx-auto flex flex-col">
+                        <div className="my-auto rounded-lg p-8 border border-black bg-dark-secondary z-12 flex flex-col font-bold gap-2 w-[70vw] max-w-[760px] select-none">
+                            <div className="w-full text-center align-middle text-2xl">
+                                QUICK GUIDE
+                            </div>
+                            <hr className="h-px my-2 bg-white border-0"/>
+                            <div className="max-h-[80vh] overflow-y-auto">
+                                <div className="max-w-[760px] mx-auto px-[24px]">
+                                    <div className="relative before:content-[''] before:absolute before:left-[27px] min-[520px]:before:left-[27px] max-[520px]:before:left-[21px] before:top-[12px] before:bottom-[12px] before:w-[1px] before:bg-gradient-to-b before:from-[#2ecc82] before:via-[#3d7dd6] before:to-[#6b7280] before:opacity-35">
+                                        <div className="grid grid-cols-[44px_1fr] min-[520px]:grid-cols-[56px_1fr] gap-[14px] min-[520px]:gap-[24px] mb-[16px] relative">
+                                            <div className="w-[44px] h-[44px] min-[520px]:w-[56px] min-[520px]:h-[56px] rounded-[11px] min-[520px]:rounded-[14px] bg-[#1a1f29] border border-[#2a3140] flex items-center justify-center font-mono text-[15px] min-[520px]:text-[18px] font-semibold text-[#2ecc82] z-10">
+                                            1
+                                            </div>
+                                            <div className="bg-[#1a1f29] border border-[#2a3140] rounded-[14px] p-[22px_24px]">
+                                                <h2 className="font-bold text-[19px] mb-[8px] leading-tight">Check your timezone</h2>
+                                                <p className="text-[#8b93a3] text-[14.5px] max-w-[520px]">
+                                                    Set your local timezone from the dropdown so hours line up correctly.
+                                                </p>
+                                                <div className="flex flex-row items-center gap-1 mt-2">
+                                                    <div>Timezone:</div>
+                                                    <select 
+                                                        value={timezone}
+                                                        onChange={(e) => switchTimezone(Number(e.target.value))}
+                                                        className="font-bold px-2"
+                                                    >
+                                                        {timezones.map((tz, idx) => <option className="text-black" key={"opt-" + idx} value={tz.value}>{tz.label}</option>)}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-[44px_1fr] min-[520px]:grid-cols-[56px_1fr] gap-[14px] min-[520px]:gap-[24px] mb-[16px] relative">
+                                            <div className="w-[44px] h-[44px] min-[520px]:w-[56px] min-[520px]:h-[56px] rounded-[11px] min-[520px]:rounded-[14px] bg-[#1a1f29] border border-[#2a3140] flex items-center justify-center font-mono text-[15px] min-[520px]:text-[18px] font-semibold text-[#3d7dd6] z-10">
+                                            2
+                                            </div>
+                                            <div className="bg-[#1a1f29] border border-[#2a3140] rounded-[14px] p-[22px_24px]">
+                                                <h2 className="font-bold text-[19px] mb-[8px] leading-tight">Pick a mode, click and drag across the timeslots</h2>
+                                                <p className="text-[#8b93a3] text-[14.5px] max-w-[520px]">
+                                                    Choose what you're about to mark: <b className="text-[#e9edf3]">Preferred</b>, <b className="text-[#e9edf3]">Open</b>, or <b className="text-[#e9edf3]">No</b>. On your row, click and drag across the hours that fit the mode you selected. Repeat for each mode — the grid fills in as you go.
+                                                </p>
+                                                <div className="mt-[16px] bg-[#212836] border border-[#2a3140] rounded-[10px] p-[14px]">
+                                                    <div className="flex flex-row items-center gap-6 text-xs">
+                                                        <div className="flex flex-row items-center gap-2 select-none cursor-pointer ms-auto" onClick={() => setBrushType(1)}>
+                                                            {
+                                                                (selectedUser.id != -1) ? <input type="radio" checked={brushType == 1} readOnly/> : null
+                                                            }
+                                                            <div>Preferred</div>
+                                                            <div className="bg-white w-[2ch] h-[2ch] rounded p-1 preferred"/>
+                                                        </div>
+                                                        <div className="flex flex-row items-center gap-2 select-none cursor-pointer" onClick={() => setBrushType(0)}>
+                                                            {
+                                                                (selectedUser.id != -1) ? <input type="radio" checked={brushType == 0} readOnly/> : null
+                                                            }
+                                                            <div>Open</div>
+                                                            <div className="bg-white w-[2ch] h-[2ch] rounded p-1 open"/>
+                                                        </div>
+                                                        <div className="flex flex-row items-center gap-2 select-none cursor-pointer" onClick={() => setBrushType(-1)}>
+                                                            {
+                                                                (selectedUser.id != -1) ? <input type="radio" checked={brushType == -1} readOnly/> : null
+                                                            }
+                                                            <div>No</div>
+                                                            <div className="bg-white w-[2ch] h-[2ch] rounded p-1 closed"/>
+                                                        </div>
+                                                    </div>
+                                                    <div className='flex flex-row items-center justify-center mx-auto my-[7px] text-sm'>
+                                                        <div>2026-03-07 (Saturday)</div>
+                                                        <p className='cursor-pointer'>
+                                                            <FontAwesomeIcon icon={faCalendarDays} className='mt-1'/>
+                                                        </p>
+                                                    </div>
+                                                    <div className="grid grid-cols-24 gap-[2px]">
+                                                    {guideModal.states.map((val, i) => {
+                                                        let cellBgClass = (val == 1) ? 'preferred' : 
+                                                            (val == -1) ? 'closed'
+                                                            : 'open';
+                                                        return <div key={i} className={"h-[20px] rounded-[2px] cursor-pointer " + cellBgClass} 
+                                                            onMouseDown={(ev) => {
+                                                                SetGuideModal({...guideModal, states: guideModal.states.map((e, idx) => (idx == i) ? brushType : e)});
+                                                            }}
+                                                            onMouseEnter={(ev) => {
+                                                                if (ev.buttons === 1) {
+                                                                    SetGuideModal({...guideModal, states: guideModal.states.map((e, idx) => (idx == i) ? brushType : e)});
+                                                                }
+                                                            }}
+                                                        />;
+                                                    })}
+                                                    </div>
+                                                    <div className="flex items-center gap-[8px] mt-[10px] text-[12px] text-[#8b93a3] font-mono">
+                                                    <span className="text-[14px]">🖱️</span> drag → fills the selected color
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-[44px_1fr] min-[520px]:grid-cols-[56px_1fr] gap-[14px] min-[520px]:gap-[24px] mb-[16px] relative">
+                                            <div className="w-[44px] h-[44px] min-[520px]:w-[56px] min-[520px]:h-[56px] rounded-[11px] min-[520px]:rounded-[14px] bg-[#1a1f29] border border-[#2a3140] flex items-center justify-center font-mono text-[15px] min-[520px]:text-[18px] font-semibold text-[#2ecc82] z-10">
+                                            3
+                                            </div>
+                                            <div className="bg-[#1a1f29] border border-[#2a3140] rounded-[14px] p-[22px_24px]">
+                                                    <h2 className="font-bold text-[19px] mb-[8px] leading-tight">Save your answer</h2>
+                                                <p className="text-[#8b93a3] text-[14.5px] max-w-[520px]">
+                                                    Click <b className="text-[#e9edf3]">Save</b> to lock in your availability. Changed your mind entirely? <b className="text-[#e9edf3]">Withdraw</b> removes your answer from the poll.
+                                                </p>
+                                                <div className="mt-[16px] flex gap-[10px] justify-center">
+                                                    <button className="bg-green-600 px-3 py-1 rounded border flex items-center justify-center gap-2 font-light flex flex-row gap-2 items-center text-sm">
+                                                        <FontAwesomeIcon icon={faFloppyDisk} />
+                                                        <div className="font-bold">Save</div>
+                                                    </button>
+                                                    <button className="bg-red-600 px-3 py-1 rounded border flex items-center justify-center gap-2 font-light flex flex-row gap-2 items-center text-sm">
+                                                        <FontAwesomeIcon icon={faXmark} />
+                                                        <div className="font-bold">Withdraw</div>
+                                                    </button>
+                                                </div>
+                                                <p className="mt-[16px] text-[#8b93a3] text-[14.5px] max-w-[520px]">
+                                                    Click The pencil icon <FontAwesomeIcon className="cursor-pointer text-white text-xl" icon={faPenToSquare}/> next to your name lets you reopen and adjust your answer later.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex flex-row items-center justify-center w- full">
+                                    <button className="bg-blue-600 px-3 py-1 rounded border flex items-center justify-center gap-2 font-light flex flex-row gap-2 items-center text-xl"
+                                        onClick={() => SetGuideModal({...guideModal, show:false})}
+                                    >
+                                        <div className="font-bold">Got it!</div>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
             <UserInfoModal
                 show={UserModal.show}
                 editMode={UserModal.editMode}
@@ -1008,7 +1164,7 @@ export function Poll() {
                                         </button>
                                     </Fragment>
                                 }
-                                
+                                <FontAwesomeIcon className="text-4xl cursor-pointer" onClick={() => SetGuideModal({ show: true, states: Array(24).fill(0).map(() => Math.floor(Math.random()*3) - 1)})} icon={faQuestionCircle}/>
                             </div>                            
                         : null
                     }
@@ -1081,8 +1237,7 @@ export function Poll() {
                     <ScheduleTable
                         pollStyle={pollStyle}
                         userData={userData}
-                        dateEnd={pollData.dateEnd}
-                        dateStart={pollData.dateStart}
+                        dateSlot={pollData.dates}
                         auxInfoCodes={pollData.auxInfoCodes}
                         activeUserId={selectedUser.id}
                         isHost={selectedUser.host}
