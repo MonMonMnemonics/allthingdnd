@@ -1144,7 +1144,7 @@ export function Poll() {
                                     (!selectedUser.host) ?
                                         <Fragment>
                                             {
-                                                (pollData.auxInfo.length > 0) ?
+                                                ((pollData.auxInfo.length > 0) || (pollData.extraQuestions.length > 0)) ?
                                                     <button className="bg-blue-600 px-3 py-1 rounded border flex items-center justify-center gap-2 font-light flex flex-row gap-2 items-center text-xl"
                                                         onClick={() => setUserModal({
                                                             show: true,
