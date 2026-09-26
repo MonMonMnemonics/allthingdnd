@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowCircleLeft, faSpinner, faWandSparkles } from "@fortawesome/free-solid-svg-icons";
+import { faArrowCircleLeft, faPlusCircle, faSpinner, faWandSparkles, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { useState } from "react";
 import moment from "moment";
 import Swal from 'sweetalert2';
@@ -30,6 +30,7 @@ export function CreatePoll() {
     const [ loading, setLoading] = useState(false);
     const [ timezone, setTimezone ] = useState(timezones[25]?.value)
     const [ dates, setDates] = useState<DateObject[][]>([]);
+    const [ customQuestions, setCustomQuestions] = useState<string[]>([]);
 
     async function createPoll() {
         if (dates.length == 0) {
@@ -77,7 +78,8 @@ export function CreatePoll() {
                         return([])
                     }
                 }).flat(),
-                dates: dates.map(e => e.map(e2 => e2.format("YYYY-MM-DD")))
+                dates: dates.map(e => e.map(e2 => e2.format("YYYY-MM-DD"))),
+                customQuestions: customQuestions
             })
         })
 
@@ -238,15 +240,44 @@ export function CreatePoll() {
                                     ))}
                                 </ul>
                             </div>
+                            <div className="flex flex-col gap-1 w-full">
+                                <div className="flex flex-row items-center gap-2">
+                                    <div className="text-nowrap text-xl">Add custom questions (max 3)</div>
+                                    {
+                                        customQuestions.length < 3 ?
+                                        <FontAwesomeIcon icon={faPlusCircle}
+                                            className="text-xl font-bold cursor-pointer"
+                                            onClick={() => {
+                                                Swal.fire({
+                                                    title: "+ Custom Question",
+                                                    theme: "dark",
+                                                    text: 'Add a custom question',
+                                                    input: 'text',
+                                                    focusConfirm: false,
+                                                }).then((res) => {
+                                                    if ((res.isConfirmed) && (res.value != '')) {
+                                                        setCustomQuestions([...customQuestions, res.value]);
+                                                    }
+                                                })
+                                            }}
+                                        /> : null
+                                    }                                    
+                                </div>
+                                
+                                <ul className="list-none">
+                                    {customQuestions.map((question, idx) => (
+                                        <li className="flex flex-row gap-2 items-center cursor-pointer" key={"custom-q-" + idx}>
+                                            <FontAwesomeIcon icon={faXmark} className="w-[1.1em] h-[1.1em] font-bold text-xl text-red-500" 
+                                                onClick={() => setCustomQuestions(customQuestions.filter((_, idx2) => idx != idx2))}
+                                            />
+                                            <div>{question}</div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
                         </div>
                     </div>
 
-                    {/*
-                    
-
-                    
-                    
-                    */}
                     <button className="dark-button p-1 py-3 text-xl rounded border flex items-center justify-center gap-2 font-light flex flex-row gap-2 items-center"
                         type="submit"
                         onClick={(e) => {

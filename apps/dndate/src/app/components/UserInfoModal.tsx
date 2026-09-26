@@ -8,12 +8,13 @@ type Props = {
     show: boolean;
     editMode: boolean;
     auxInfo: {id:number, code: string}[];
+    extraQuestions: {id:number, question: string}[];
     initData: {[index: string]: any};
     closeModal: (() => void);
     submitData: ((data: {[index : string]: any}) => void);
 }
 
-export const UserInfoModal = ({ show, editMode, auxInfo, initData, closeModal, submitData }: Props) => {
+export const UserInfoModal = ({ show, editMode, auxInfo, extraQuestions, initData, closeModal, submitData }: Props) => {
     const [data, setData] = useState({name: "", pass: ""});
     const [auxData, setAuxData] = useState<{[index:string]: any}>({})
 
@@ -28,6 +29,11 @@ export const UserInfoModal = ({ show, editMode, auxInfo, initData, closeModal, s
             for (const infoDt of auxInfo) {
                 newAuxData[infoDt.code] = initData[infoDt.code] ?? "";
             }
+
+            for (const extraQ of extraQuestions) {
+                newAuxData["q-" + extraQ.id] = initData["q-" + extraQ.id] ?? "";
+            }
+
             setAuxData(newAuxData);
         }        
     }, [show]);
@@ -42,7 +48,7 @@ export const UserInfoModal = ({ show, editMode, auxInfo, initData, closeModal, s
                             {editMode ? initData.name : "Add New Member"}
                         </div>
                         <hr className="h-px my-2 bg-white border-0"/>
-                        <div className="flex flex-col gap-2 overflow-y-auto">
+                        <div className="flex flex-col gap-2 pe-3 overflow-y-auto">
                             {   (editMode) ? null
                                 : <Fragment>
                                     <div className="flex flex-row gap-2 items-center w-full">
@@ -176,6 +182,20 @@ export const UserInfoModal = ({ show, editMode, auxInfo, initData, closeModal, s
                                     }
                                 </Fragment>
                                 : null
+                            }
+                            {
+                                extraQuestions.map(qItem => 
+                                    <div className="flex flex-col gap-1 w-full" key={"input-" + qItem.id}>
+                                        <div className="font-bold">{qItem.question}:</div>
+                                        <textarea
+                                            value={auxData["q-" + qItem.id] ?? ""}
+                                            onChange={(e) => setAuxData({...auxData, ["q-" + qItem.id]: e.target.value})}
+                                            placeholder="None"
+                                            className="dark-input w-full p-2 rounded border font-light resize-none h-[7em]"
+                                            maxLength={400}
+                                        />
+                                    </div>
+                                )
                             }
                             <div className="flex flex-row items-center justify-between">
                                 <button className="bg-red-600 px-3 py-1 rounded border flex items-center justify-center gap-2 font-light flex flex-row gap-2 items-center text-xl"

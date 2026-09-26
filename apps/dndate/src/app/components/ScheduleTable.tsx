@@ -14,6 +14,7 @@ type Props = {
     isHost: boolean;
     dateSlot: string[];
     auxInfoCodes: string[];
+    extraQuestionIds: number[];
     timeslotHostLock: boolean;
     timeslotShift: number;
 
@@ -29,6 +30,7 @@ export const ScheduleTable: FC<Props> = memo(({
     activeUserId,
     isHost,
     auxInfoCodes,
+    extraQuestionIds,
     timeslotHostLock,
     timeslotShift,
     dateSlot,
@@ -259,7 +261,7 @@ export const ScheduleTable: FC<Props> = memo(({
                                                         : null
                                                     }
                                                     {
-                                                        (auxInfoCodes.length > 0) ?
+                                                        ((auxInfoCodes.length > 0) || (extraQuestionIds.length > 0)) ?
                                                         <FontAwesomeIcon className="cursor-pointer" icon={faCircleInfo} onClick={() => setAuxInfoModal({
                                                             show: true,
                                                             name: user.name,
@@ -267,6 +269,7 @@ export const ScheduleTable: FC<Props> = memo(({
                                                                 [auxInfoEnum.discordHandle]: user.auxInfo[auxInfoEnum.discordHandle] ?? "",
                                                                 [auxInfoEnum.veils]: user.auxInfo[auxInfoEnum.veils] ?? "",
                                                                 [auxInfoEnum.lines]: user.auxInfo[auxInfoEnum.lines] ?? "",
+                                                                ...Object.fromEntries(extraQuestionIds.map(questionId => ["q-" + questionId, user.auxInfo["q-" + questionId] ?? ""]))
                                                             }
                                                         })}/>
                                                         : null
@@ -337,7 +340,7 @@ export const ScheduleTable: FC<Props> = memo(({
                                                                 : null
                                                             }
                                                             {
-                                                                (auxInfoCodes.length > 0) ?
+                                                                ((auxInfoCodes.length > 0) || (extraQuestionIds.length > 0)) ?
                                                                 <FontAwesomeIcon className="cursor-pointer" icon={faCircleInfo} onClick={() => setAuxInfoModal({
                                                                     show: true,
                                                                     name: user.name,
@@ -345,6 +348,7 @@ export const ScheduleTable: FC<Props> = memo(({
                                                                         [auxInfoEnum.discordHandle]: user.auxInfo[auxInfoEnum.discordHandle] ?? "",
                                                                         [auxInfoEnum.veils]: user.auxInfo[auxInfoEnum.veils] ?? "",
                                                                         [auxInfoEnum.lines]: user.auxInfo[auxInfoEnum.lines] ?? "",
+                                                                        ...Object.fromEntries(extraQuestionIds.map(questionId => ["q-" + questionId, user.auxInfo["q-" + questionId] ?? ""]))
                                                                     }
                                                                 })}/>
                                                                 : null

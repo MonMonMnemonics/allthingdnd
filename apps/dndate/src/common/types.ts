@@ -26,5 +26,9 @@ export interface PollData {
         id: number,
         code: string
     }[],
-    auxInfoCodes: string[]
+    auxInfoCodes: string[],
+    extraQuestions: {
+        id: number,
+        question: string
+    }[]
 }

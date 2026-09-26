@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { db } from "../lib/database";
-import { poll, user, auxInfo, attendance, userInfo, pollSlots } from "../lib/schema";
+import { poll, user, auxInfo, attendance, userInfo, pollSlots, customQuestion, customAnswer } from "../lib/schema";
 import { and, asc, desc, eq, inArray, lt, notInArray } from "drizzle-orm";
 import moment from "moment";
 import type { UserData } from "@/common/types";
@@ -176,6 +176,13 @@ API.post('poll/create', async (ctx) => {
         dateEnd: dates[1]
     })));
 
+    if ((reqData.customQuestions ?? []).length > 0) {
+        await db.insert(customQuestion).values(reqData.customQuestions.map((q: string) => ({
+            pollId: newPoll[0]?.id,
+            question: q
+        })));
+    }
+
     await db.insert(user).values({
         pollId: newPoll[0]?.id,
         name: reqData.name,
@@ -244,6 +251,24 @@ API.post("poll/login", async (ctx) => {
             //@ts-expect-error
             privateAuxInfoList[userId][infoDt.code] = convertToInfoVal(infoDt.code, infoDt.val);
         }
+
+        const customAnswers = await db.select({
+                questionId: customAnswer.questionId,
+                userId: customAnswer.userId,
+                val: customAnswer.answer
+            })
+            .from(customAnswer)
+            .where(eq(customAnswer.pollId, userData[0].pollId));
+
+        for (const customA of customAnswers) {
+            const userId = (customA.userId ?? -1).toString();
+            if (!(userId in privateAuxInfoList)) {
+                privateAuxInfoList[userId] = {};
+            }
+
+            //@ts-expect-error
+            privateAuxInfoList[userId]["q-" + customA.questionId] = customA.val;
+        }
     } else {
         const auxInfos = await db.select({
                 userId: userInfo.userId,
@@ -262,6 +287,24 @@ API.post("poll/login", async (ctx) => {
 
             //@ts-expect-error
             privateAuxInfoList[userId][infoDt.code] = convertToInfoVal(infoDt.code, infoDt.val);
+        }
+
+        const customAnswers = await db.select({
+                questionId: customAnswer.questionId,
+                userId: customAnswer.userId,
+                val: customAnswer.answer
+            })
+            .from(customAnswer)
+            .where(eq(customAnswer.userId, userData[0].id));
+
+        for (const customA of customAnswers) {
+            const userId = (customA.userId ?? -1).toString();
+            if (!(userId in privateAuxInfoList)) {
+                privateAuxInfoList[userId] = {};
+            }
+
+            //@ts-expect-error
+            privateAuxInfoList[userId]["q-" + customA.questionId] = customA.val;
         }
     }
 
@@ -310,6 +353,7 @@ API.post("poll/create-user", async (ctx) => {
     }
 
     let newInfoData: {userId: number, infoId: number, val:string}[] = [];
+    let newCustomAnswer: {userId: number, pollId: number, questionId: number, answer: string}[] = [];
     for (const code in (reqData.auxInfo ?? {})) {
         if (code in infoMap) {
             const val = convertFromInfoVal(code, reqData.auxInfo[code] ?? null);
@@ -322,11 +366,30 @@ API.post("poll/create-user", async (ctx) => {
                     val: val
                 });
             }
+        } else if (code.startsWith("q-")) {
+            const questionId = Number(code.slice(2));
+            newCustomAnswer.push({
+                //@ts-expect-error
+                userId: newUser[0]?.id,
+                pollId: pollData[0].id,
+                questionId: questionId,
+                answer: reqData.auxInfo[code] ?? null
+            });
         }
     }
 
     if (newInfoData.length > 0) {
         await db.insert(userInfo).values(newInfoData);
+    }
+
+    if (newCustomAnswer.length > 0) {
+        await db.delete(customAnswer)
+            .where(and(
+                eq(customAnswer.userId, Number(newUser[0]?.id)),
+                eq(customAnswer.pollId, Number(pollData[0].id)),
+            ));
+
+        await db.insert(customAnswer).values(newCustomAnswer);
     }
 
     if ((reqData.pass ?? "") == "") {
@@ -383,6 +446,13 @@ API.post("poll/data", async (ctx) => {
         })
         .from(auxInfo)
         .where(eq(auxInfo.pollId, pollData.id));
+
+    pollData.extraQuestions = await db.select({
+            id: customQuestion.id,
+            question: customQuestion.question
+        })
+        .from(customQuestion)
+        .where(eq(customQuestion.pollId, pollData.id));
 
     const sortedAuxInfo = Object.values(auxInfoEnum);
     pollData.auxInfo = pollData.auxInfo.sort((a: any, b: any) => {
@@ -505,6 +575,7 @@ API.post("poll/save-info", async (ctx) => {
 
     await db.delete(userInfo).where(eq(userInfo.userId, reqData.userData.id ?? -1));
     let newInfoData: {userId: number, infoId: number, val:string}[] = [];
+    let newCustomAnswer: {userId: number, pollId: number, questionId: number, answer: string}[] = [];
     for (const code in (reqData.userData.auxInfo ?? {})) {
         if (code in infoMap) {
             const val = convertFromInfoVal(code, reqData.userData.auxInfo[code] ?? null);
@@ -516,11 +587,29 @@ API.post("poll/save-info", async (ctx) => {
                     val: val
                 });
             }
+        } else if (code.startsWith("q-")) {
+            const questionId = Number(code.slice(2));
+            newCustomAnswer.push({
+                userId: reqData.userData.id,
+                pollId: pollData.id,
+                questionId: questionId,
+                answer: reqData.userData.auxInfo[code] ?? null
+            });
         }
     }
 
     if (newInfoData.length > 0) {
         await db.insert(userInfo).values(newInfoData);
+    }
+
+    if (newCustomAnswer.length > 0) {
+        await db.delete(customAnswer)
+            .where(and(
+                eq(customAnswer.userId, Number(reqData.userData.id)),
+                eq(customAnswer.pollId, Number(pollData.id)),
+            ));
+
+        await db.insert(customAnswer).values(newCustomAnswer);
     }
 
     return ctx.text("SAVED!");
@@ -531,6 +620,7 @@ API.post("poll/withdraw", async (ctx) => {
     await db.delete(user).where(eq(user.id, ctx.get("userData").id));
     await db.delete(attendance).where(eq(attendance.userId, ctx.get("userData").id));
     await db.delete(userInfo).where(eq(userInfo.userId, ctx.get("userData").id));
+    await db.delete(customAnswer).where(eq(customAnswer.userId, ctx.get("userData").id));
     return ctx.text("Done!");
 });
 
@@ -541,6 +631,7 @@ API.post("poll/delete-user", async (ctx) => {
         await db.delete(user).where(eq(user.id, reqData.userId));
         await db.delete(attendance).where(eq(attendance.userId, reqData.userId));
         await db.delete(userInfo).where(eq(userInfo.userId, reqData.userId));
+        await db.delete(customAnswer).where(eq(customAnswer.userId, reqData.userId));
     }
     
     return ctx.text("Done!");
@@ -560,7 +651,9 @@ API.post("poll/delete", async (ctx) => {
     if (ctx.get("userData").host) {
         await db.delete(poll).where(eq(poll.id, ctx.get("pollData").id));
         await db.delete(pollSlots).where(eq(pollSlots.pollId, ctx.get("pollData").id));
-        await db.delete(auxInfo).where(eq(auxInfo.id, ctx.get("pollData").id));
+        await db.delete(auxInfo).where(eq(auxInfo.pollId, ctx.get("pollData").id));
+        await db.delete(customAnswer).where(eq(customAnswer.pollId, ctx.get("pollData").id));
+        await db.delete(customQuestion).where(eq(customQuestion.pollId, ctx.get("pollData").id));
         
         const users = await db.select({ id: user.id }).from(user).where(eq(user.pollId, ctx.get("pollData").id));
         await db.delete(user).where(inArray(user.id, users.map(e => e.id)));
@@ -584,7 +677,9 @@ setInterval(async () => {
     if (pollToDelete.length > 0) {
         await db.delete(poll).where(inArray(poll.id, pollToDelete.map(e => e.id)));
         await db.delete(pollSlots).where(inArray(pollSlots.pollId, pollToDelete.map(e => e.id)));
-        await db.delete(auxInfo).where(inArray(auxInfo.id, pollToDelete.map(e => e.id)));
+        await db.delete(auxInfo).where(inArray(auxInfo.pollId, pollToDelete.map(e => e.id)));
+        await db.delete(customQuestion).where(inArray(customQuestion.pollId, pollToDelete.map(e => e.id)));
+        await db.delete(customAnswer).where(inArray(customAnswer.pollId, pollToDelete.map(e => e.id)));
         
         const users = await db.select({ id: user.id }).from(user).where(inArray(user.pollId, pollToDelete.map(e => e.id)));
         await db.delete(user).where(inArray(user.id, users.map(e => e.id)));

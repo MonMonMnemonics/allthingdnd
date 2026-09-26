@@ -36,6 +36,7 @@ export function Poll() {
         open: true,
         auxInfo: [],
         auxInfoCodes: [],
+        extraQuestions: [],
         timeslotHostLock: false,
         dates: []
     });
@@ -494,6 +495,7 @@ export function Poll() {
                 icon: "error",
                 text: "Make sure you choose the right user and enter the right password"
             });
+            return;
         }
 
         setLoading(true);
@@ -812,63 +814,78 @@ export function Poll() {
                 <div className="fixed h-full w-full z-10 flex flex-row">
                     <div className="bg-black opacity-40 fixed h-full w-full z-11" onClick={() => setAuxInfoModal({...auxInfoModal, show: false})}></div>
                     <div className="mx-auto flex flex-col">
-                        <div className="my-auto rounded-lg p-8 border border-black bg-dark-secondary z-12 flex flex-col font-bold gap-2 w-[30em]">
+                        <div className="my-auto rounded-lg p-8 border border-black bg-dark-secondary z-12 flex flex-col font-bold gap-2 w-[30em] max-h-[90vh]">
                             <div className="w-full text-center align-middle text-2xl">
                                 {auxInfoModal.name}
                             </div>
                             <hr className="h-px my-2 bg-white border-0"/>
-                            {
-                                pollData.auxInfoCodes.includes(auxInfoEnum.discordHandle) ?
-                                <div className="flex flex-row gap-2 items-center w-full">
-                                    <div className="text-nowrap text-xl">Discord name:</div>
-                                    <input
-                                        value={auxInfoModal.auxInfo[auxInfoEnum.discordHandle]}
-                                        placeholder="..."
-                                        className="dark-input w-full p-2 rounded border font-light"
-                                        readOnly={true}
-                                    />
+                            <div className="flex flex-col gap-2 pe-3 overflow-y-auto">
+                                {
+                                    pollData.auxInfoCodes.includes(auxInfoEnum.discordHandle) ?
+                                    <div className="flex flex-row gap-2 items-center w-full">
+                                        <div className="text-nowrap text-xl">Discord name:</div>
+                                        <input
+                                            value={auxInfoModal.auxInfo[auxInfoEnum.discordHandle]}
+                                            placeholder="..."
+                                            className="dark-input w-full p-2 rounded border font-light"
+                                            readOnly={true}
+                                        />
+                                    </div>
+                                    : null
+                                }
+                                {
+                                    pollData.auxInfoCodes.includes(auxInfoEnum.veils) ?
+                                    <div className="flex flex-col gap-2 items-center w-full">
+                                        <div className="text-nowrap text-xl">Veils:</div>
+                                        <textarea
+                                            value={auxInfoModal.auxInfo[auxInfoEnum.veils]}
+                                            placeholder="None"
+                                            className="dark-input w-full p-2 rounded border font-light resize-none h-[7em]"
+                                            readOnly={true}
+                                        />
+                                    </div>
+                                    : null
+                                }
+                                {
+                                    pollData.auxInfoCodes.includes(auxInfoEnum.lines) ?
+                                    <div className="flex flex-col gap-2 items-center w-full">
+                                        <div className="text-nowrap text-xl">Lines:</div>
+                                        <textarea
+                                            value={auxInfoModal.auxInfo[auxInfoEnum.lines]}
+                                            placeholder="None"
+                                            className="dark-input w-full p-2 rounded border font-light resize-none h-[7em]"
+                                            readOnly={true}
+                                        />
+                                    </div>
+                                    : null
+                                }
+                                {
+                                    pollData.extraQuestions.map((extraQ) => 
+                                        <div className="flex flex-col gap-2 items-center w-full" key={"info-modal-q-" + extraQ.id}>
+                                            <div className="text-nowrap text-xl">{extraQ.question}:</div>
+                                            <textarea
+                                                value={auxInfoModal.auxInfo["q-" + extraQ.id] ?? ""}
+                                                placeholder="None"
+                                                className="dark-input w-full p-2 rounded border font-light resize-none h-[7em]"
+                                                readOnly={true}
+                                            />
+                                        </div>
+                                    )
+                                }
+                                <div className="flex flex-row items-center justify-center w- full">
+                                    <button className="bg-blue-600 px-3 py-1 rounded border flex items-center justify-center gap-2 font-light flex flex-row gap-2 items-center text-xl"
+                                        onClick={() => setAuxInfoModal({...auxInfoModal, show: false})}
+                                    >
+                                        <div className="font-bold">OK</div>
+                                    </button>
                                 </div>
-                                : null
-                            }
-                            {
-                                pollData.auxInfoCodes.includes(auxInfoEnum.veils) ?
-                                <div className="flex flex-col gap-2 items-center w-full">
-                                    <div className="text-nowrap text-xl">Veils:</div>
-                                    <textarea
-                                        value={auxInfoModal.auxInfo[auxInfoEnum.veils]}
-                                        placeholder="None"
-                                        className="dark-input w-full p-2 rounded border font-light resize-none h-[7em]"
-                                        readOnly={true}
-                                    />
-                                </div>
-                                : null
-                            }
-                            {
-                                pollData.auxInfoCodes.includes(auxInfoEnum.lines) ?
-                                <div className="flex flex-col gap-2 items-center w-full">
-                                    <div className="text-nowrap text-xl">Lines:</div>
-                                    <textarea
-                                        value={auxInfoModal.auxInfo[auxInfoEnum.lines]}
-                                        placeholder="None"
-                                        className="dark-input w-full p-2 rounded border font-light resize-none h-[7em]"
-                                        readOnly={true}
-                                    />
-                                </div>
-                                : null
-                            }
-                            <div className="flex flex-row items-center justify-center w- full">
-                                <button className="bg-blue-600 px-3 py-1 rounded border flex items-center justify-center gap-2 font-light flex flex-row gap-2 items-center text-xl"
-                                    onClick={() => setAuxInfoModal({...auxInfoModal, show: false})}
-                                >
-                                    <div className="font-bold">OK</div>
-                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
             }
 
-            { //-------------------------- INFO MODAL --------------------------
+            { //-------------------------- GUIDE MODAL --------------------------
                 guideModal.show && 
                 <div className="fixed h-full w-full z-10 flex flex-row">
                     <div className="bg-black opacity-40 fixed h-full w-full z-11" onClick={() => SetGuideModal({ ...guideModal, show: false})}></div>
@@ -1010,6 +1027,7 @@ export function Poll() {
                 editMode={UserModal.editMode}
                 closeModal={() => setUserModal({...UserModal, show: false})}
                 auxInfo={pollData.auxInfo}
+                extraQuestions={pollData.extraQuestions}
                 submitData={(data) => (UserModal.editMode) ? submitInfoChange(data.auxInfo ?? {}) : submitNewUser(data)}
                 initData={UserModal.initData}                
             />
@@ -1239,6 +1257,7 @@ export function Poll() {
                         userData={userData}
                         dateSlot={pollData.dates}
                         auxInfoCodes={pollData.auxInfoCodes}
+                        extraQuestionIds={pollData.extraQuestions.map(e => e.id)}
                         activeUserId={selectedUser.id}
                         isHost={selectedUser.host}
                         timeslotHostLock={pollData.timeslotHostLock}

@@ -57,3 +57,17 @@ export const userInfo = sqliteTable("user_info", {
     infoId: integer("info_id").references(() => auxInfo.id, { onDelete: "cascade" }),
     val: text("val")
 })
+
+export const customQuestion = sqliteTable("custom_questions", {
+    id: integer("id").primaryKey(),
+    pollId: integer("poll_id").references(() => poll.id, { onDelete: "cascade" }),
+    question: text("question").notNull()
+})
+
+export const customAnswer = sqliteTable("custom_answer", {
+    id: integer("id").primaryKey(),
+    userId: integer("user_id").references(() => user.id, { onDelete: "cascade" }),
+    pollId: integer("poll_id").references(() => poll.id, { onDelete: "cascade" }),
+    questionId: integer("question_id").references(() => customQuestion.id, { onDelete: "cascade" }),
+    answer: text("answer")
+})
